@@ -1,9 +1,9 @@
 Titulo del proyecto: CAMPO A UN CLICK
-Descripcion: CAMPO A UN CLICK es un proyecto creado a partir de la necesidad de muchos campesinos no optener la satisfaccion de vender sus productos a un preco justo, dado que al momento de 
-cosechar se ven obligados a vender sus productos a intermediarios a precios muy bajos. siendo estos los mejores aprovechados llevandose con sigo un muy alto porcentaje.
+Descripcion: CAMPO A UN CLICK es un proyecto creado a partir de la necesidad de muchos campesinos no optener la satisfaccion de vender sus productos a un precio justo, dado que al momento de cosechar se ven obligados a vender sus productos a intermediarios a precios muy bajos. siendo estos los mejores aprovechados llevandose con sigo un muy alto porcentaje.
 CAMPO A UN CLICK es un sitio web que con mutiples roles: El vendedor, compradores y administrador 
 Instrucciones de uso: crear usuario definiendo el rol(agregue usuario y contraseña)
 Estructuras de carpetas o archivos principales:Desarriollo Web(pdf). READMI.txt
 Autores colaboradores: Shirly Martinez, Luis Pastrana y Leider Vargas.
 
 Licencias(si aplica): NO APLICA
+
