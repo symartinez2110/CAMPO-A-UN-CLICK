@@ -5,4 +5,5 @@ CAMPO A UN CLICK es un sitio web que con mutiples roles: El vendedor, compradore
 Instrucciones de uso: crear usuario definiendo el rol(agregue usuario y contraseña)
 Estructuras de carpetas o archivos principales:Desarriollo Web(pdf). READMI.txt
 Autores colaboradores: Shirly Martinez, Luis Pastrana y Leider Vargas.
+
 Licencias(si aplica): NO APLICA
