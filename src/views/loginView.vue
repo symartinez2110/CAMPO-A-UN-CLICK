@@ -14,7 +14,7 @@
           <div class="form-group">
             <input type="password" placeholder="contraseña" v-model="password" required />
           </div>
-          <button type="submit">Acceder</button>
+         <div class="button"> <router-link :to="{name:'homeUser'}">Acceder</router-link> </div>
         </form>
       </div>
     </div>
@@ -100,7 +100,7 @@ h2 {
   text-align: center;
   margin-bottom: 25px;
   font-size: 1.5rem;
-  color: #555;
+  color: #5d9266;
   letter-spacing: 1px;
 }
 
@@ -123,10 +123,12 @@ input::placeholder {
   color: #000;
 }
 
-button {
+.button {
+  display: flex;
+  justify-content: center;
   width: 65%;
-  height: 40px;
-  margin-left: 45px;
+  height: 20px;
+  margin-left: 26px;
   padding: 12px;
   background-color: #AEF379;
   color: #000;
@@ -136,8 +138,80 @@ button {
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
+a:-webkit-any-link {
+  text-decoration: none;
+  color: #000;
+}
 
-button:hover {
+.button:hover {
   background-color: #5d9266;
+}
+
+/* Media query para pantallas pequeñas (móviles) */
+@media (max-width: 414px) {
+  .login-box {
+    flex-direction: column; /* Apila los elementos verticalmente */
+    width: 95%; /* Ocupa más ancho en la pantalla para mejor visibilidad */
+    max-width: 400px; /* Asegura que no sea demasiado ancho en tablets */
+    height: auto; /* La altura se ajusta al contenido */
+  }
+
+  .login-image-section {
+    border-right: none; /* Elimina la línea divisoria vertical */
+    padding: 20px 15px; /* Ajusta el relleno vertical y horizontal */
+    margin-left: -34px;
+    width: 100%; /* Asegura que ocupe todo el ancho disponible */
+  }
+
+  .tractor-image {
+    max-width: 60%; /* Ajusta el tamaño del tractor para que no sea muy grande */
+  }
+
+  .slogan {
+    font-size: 1rem; /* Reduce el tamaño de la fuente del eslogan */
+    text-align: center; /* Centra el texto */
+  }
+
+  .login-form-section {
+    padding: 25px 20px; /* Ajusta el relleno para que haya un buen espacio alrededor del formulario */
+    width: 100%; /* Asegura que ocupe todo el ancho disponible */
+  }
+  
+  h2 {
+    font-size: 1.3rem; /* Reduce el tamaño del título INICIAR SESION */
+    margin-bottom: 25px; /* Ajusta el margen inferior */
+    margin-right: 33px;
+  }
+
+  input[type="text"],
+  input[type="password"]
+  {
+    padding: 12px; /* Mantener un buen tamaño para los campos y el botón */
+    font-size: 1rem; /* Ajustar el tamaño de la fuente */
+    margin-bottom: 10px;
+  }
+
+
+}
+
+/* Media query para tablets */
+@media (min-width: 415px) and (max-width: 768px) {
+  .login-box {
+  display: flex;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  max-width: 900px; /* Incrementamos el ancho máximo */
+  width: 90%;
+}
+
+  .login-image-section {
+    padding: 20px; /* Ajustamos el relleno para que no se vea tan grande */
+  }
+
+  .login-form-section {
+    padding: 20px; /* Ajustamos el relleno de la sección del formulario */
+  }
 }
 </style>
