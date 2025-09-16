@@ -4,6 +4,7 @@ import loginView from '../views/viewsUser/loginView.vue';
 import HomeView from "../views/viewsUser/HomeView.vue";
 import ProductosView from "../views/viewsUser/productosView.vue";
 import PerfilUserView from "../views/viewsUser/perfilUserView.vue";
+import DashboarvViews from "../views/viewsAdmin/dashboarvViews.vue";
 
 
 // Bloque para la navegacion 
@@ -36,6 +37,11 @@ const router = createRouter({
         path: '/perfilUser',
         name: 'perfilUser',
         component: PerfilUserView
+    },
+    {
+        path: '/dashboarAdmin',
+        name: 'dashboarAdmin',
+        component: DashboarvViews
     }
     ]
 })
