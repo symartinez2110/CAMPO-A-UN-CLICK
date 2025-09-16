@@ -1,5 +1,5 @@
 <template>
-    <h1>Este es un template</h1>
+    <h1>Este es un template el cual se cambio</h1>
 </template>
 
 <script setup>
