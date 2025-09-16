@@ -14,14 +14,14 @@
     <div class="grid-container">
       <div class="product-card" v-for="n in 6" :key="n">
         <div class="seller-info">
-          <div class="avatar-circle"><img src="../../public/foto_user.png" alt=""></div>
+          <div class="avatar-circle"><img src="../../../public/foto_user.png" alt=""></div>
           <div class="seller-text">
             <h6>Campesino 34</h6>
             <span>Sección: Verduras</span>
           </div>
         </div>
         <div class="product-image-container">
-          <img class="product-img" src="../../public/foto_producto.jpg" alt="Tomates">
+          <img class="product-img" src="../../../public/foto_producto.jpg" alt="Tomates">
         </div>
         <div class="product-details">
           <h5>Tomates</h5>
@@ -38,7 +38,7 @@
 </template>
 <script setup>
 
-import theHeader from '../components/theHeader.vue';
+import theHeader from '../../components/theHeader.vue';
 </script>
 
 <style scoped>
@@ -47,13 +47,12 @@ import theHeader from '../components/theHeader.vue';
   flex-direction: column;
   align-items: center;
   font-family: sans-serif;
-  background-image: url('../../public/Fondo_Panel_User.jpg');
+  background-image: url('../../../public/Fondo_Panel_User.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   min-height: 100vh;
   padding: 1rem 0;
-  border-radius: 5rem;
 }
 
 .panel-central {
@@ -115,8 +114,8 @@ import theHeader from '../components/theHeader.vue';
 }
 
 .product-card {
-  background-color: #B5E491; /* Un verde claro para el fondo */
-  padding: 1.5rem 1rem 1rem; /* Más espacio arriba */
+  background-color: #B5E491; 
+  padding: 1.5rem 1rem 1rem; 
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   display: flex;

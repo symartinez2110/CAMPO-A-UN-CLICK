@@ -22,24 +22,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-// Importa Pinia y Axios si los necesitas más adelante
-// import { useAuthStore } from '@/stores/auth';
-// import axios from 'axios';
-
-const username = ref('');
-const password = ref('');
-const router = useRouter();
-
-const handleLogin = () => {
-  // Lógica de autenticación: aquí se haría la llamada a la API
-  console.log('Usuario:', username.value);
-  console.log('Contraseña:', password.value);
-  
-  // Por ahora, solo simularemos el login y redirigiremos a la página principal
-  router.push({ name: 'home' });
-};
 </script>
 
 <style scoped>

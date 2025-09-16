@@ -1,7 +1,9 @@
 //Importaciones requeridas para la navegación
 import { createRouter, createWebHistory } from "vue-router";
-import loginView from '../views/loginView.vue'; 
-import HomeView from "../views/HomeView.vue";
+import loginView from '../views/viewsUser/loginView.vue'; 
+import HomeView from "../views/viewsUser/HomeView.vue";
+import ProductosView from "../views/viewsUser/productosView.vue";
+import PerfilUserView from "../views/viewsUser/perfilUserView.vue";
 
 
 // Bloque para la navegacion 
@@ -25,7 +27,16 @@ const router = createRouter({
         name: 'homeUser',
         component: HomeView
     },
-    //Mas rutas para el proyecto en la parte visual
+    {
+        path: '/productosUser',
+        name: 'productosUser',
+        component: ProductosView
+    },
+    {
+        path: '/perfilUser',
+        name: 'perfilUser',
+        component: PerfilUserView
+    }
     ]
 })
 

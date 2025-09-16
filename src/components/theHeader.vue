@@ -9,8 +9,8 @@
 
     <div v-if="isMenuOpen" class="dropdown-menu" >
         <ul>
-            <li>EDITAR PERFIL</li>
-            <li>PRODUCTOS</li>
+            <router-link :to="{name: 'perfilUser'}"> <li class="button">Perfil</li></router-link>
+            <router-link  :to="{name: 'productosUser'}"> <li class="button">Productos</li></router-link>
         </ul>
     </div>
    </div>
@@ -71,6 +71,28 @@ onUnmounted(() => {
 
 }
 
+.button {
+  display: flex;
+  justify-content: center;
+  width: 65%;
+  height: 20px;
+  padding: 12px;
+  background-color: #AEF379;
+  color: #000;
+  border: none;
+  border-radius: 150px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+a:-webkit-any-link {
+  text-decoration: none;
+  color: #000;
+}
+
+.button:hover {
+  background-color: #5d9266;
+}
+
 .header h1 {
   font-size: 20px;
   font-weight: bold;
@@ -105,12 +127,14 @@ onUnmounted(() => {
   position: absolute;
   top: 120%; /* Posiciona el menú un poco debajo del ícono */
   right: 0; /* Lo alinea a la derecha del contenedor */
-  background-color: #bbf784; /* Un verde similar al de la imagen */
+  background-color: #c7f49d; /* Un verde similar al de la imagen */
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   padding: 10px 15px;
+  margin: 1rem;
   width: max-content; /* El ancho se ajusta al contenido */
   z-index: 100; /* Asegura que esté por encima de otros elementos */
+  
 }
 .dropdown-menu ul {
   list-style-type: none; /* Quita los puntos de la lista */
@@ -120,8 +144,9 @@ onUnmounted(() => {
 
 .dropdown-menu li {
   padding: 10px 15px;
+  margin-bottom: 5px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 500;
   border-radius: 6px;
   transition: background-color 0.2s; /* Efecto suave al pasar el ratón */
