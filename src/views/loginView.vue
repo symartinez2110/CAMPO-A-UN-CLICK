@@ -14,7 +14,7 @@
           <div class="form-group">
             <input type="password" placeholder="contraseña" v-model="password" required />
           </div>
-         <div class="button"> <router-link :to="{name:'homeUser'}">Acceder</router-link> </div>
+          <router-link :to="{name:'homeUser'}"><div class="button">Acceder </div></router-link>
         </form>
       </div>
     </div>
