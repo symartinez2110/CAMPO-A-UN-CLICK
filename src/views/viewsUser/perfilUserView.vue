@@ -53,14 +53,17 @@ import theHeader from '../../components/theHeader.vue';
 }
 
 .profile-card {
-  background-color: #B5E491;
+  height: 100%;
+ background-color: white;
   border-radius: 15px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 30px;
-  width: 90%;
-  max-width: 600px;
-  /* Posicionamiento en el centro de la vista. */
-  margin-top: 100px; /* Para dejar espacio al encabezado. */
+  padding: 80px;
+  width: 70%; /* Esto permite que quepan 2 por fila */
+  max-width: 900px;
+  min-width: 300px;
+  text-align: center;
+  margin-top: 100px;
+  
 }
 
 .card-header {
@@ -100,18 +103,32 @@ import theHeader from '../../components/theHeader.vue';
 }
 
 .data-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columnas iguales */
+  grid-template-rows: repeat(2, auto);  
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.data-box {
+  background-color: #B5E491;
+  color: white;
+  width: 150px;
+  height: 100px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  font-weight: bold;
 }
 
 .data-field {
   background-color: seagreen;
   color: white;
   padding: 15px 20px;
+  margin: 20px;
   border-radius: 8px;
-  flex: 1 1 calc(50% - 10px); /* Ocupa el 50% del ancho con un pequeño espacio. */
+  flex: 1 1 calc(60% - 10px); /* Ocupa el 50% del ancho con un pequeño espacio. */
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
