@@ -14,7 +14,7 @@
           <div class="form-group">
             <input type="password" placeholder="contraseña" v-model="password" required />
           </div>
-          <router-link :to="{name:'homeUser'}"><div class="button">Acceder </div></router-link>
+          <button type="submit" class="button">Acceder</button>
         </form>
       </div>
     </div>
@@ -22,7 +22,48 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import useApi from '../../componsables/useApi'
+
+const { post } = useApi()
+const router = useRouter()
+
+const username = ref('')
+const password = ref('')
+
+const handleLogin = async () => {
+  try {
+    const res = await post('/auth/login', {
+      email: username.value,
+      contraseña: password.value
+    })
+
+    console.log("Respuesta del login:", res)
+
+    // Guardar token y rol en localStorage
+    localStorage.setItem('token', res.token)
+    localStorage.setItem('rol', res.rol)
+
+    // Redirigir según rol
+    if (res.rol === 'admin') {
+      router.push({ name: 'dashboarAdmin' })
+    } else if (res.rol === 'campesino') {
+      router.push({ name: 'homeUser' })
+    } else {
+      router.push({ name: 'homeUser' })
+    }
+
+  } catch (error) {
+    console.error("Error en login:", error)
+    alert('Credenciales incorrectas')
+  }
+}
+
+
 </script>
+
+
 
 <style scoped>
 .login-view-container {
@@ -109,8 +150,8 @@ input::placeholder {
   display: flex;
   justify-content: center;
   width: 65%;
-  height: 20px;
-  margin-left: 26px;
+  height: 45px;
+  margin-left: 40px;
   padding: 12px;
   background-color: #AEF379;
   color: #000;
