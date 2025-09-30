@@ -16,6 +16,7 @@
           </div>
           <button type="submit" class="button">Acceder</button>
         </form>
+        <h3 style="color: #5d9266;">No tienes cuenta <router-link :to="{name:'registroUser'}" style="color: #9393e9;"> Registrate </router-link></h3>
       </div>
     </div>
   </div>

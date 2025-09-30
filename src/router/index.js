@@ -5,6 +5,7 @@ import HomeView from "../views/viewsUser/HomeView.vue";
 import ProductosView from "../views/viewsUser/productosView.vue";
 import PerfilUserView from "../views/viewsUser/perfilUserView.vue";
 import DashboarvViews from "../views/viewsAdmin/dashboarvViews.vue";
+import RegistroView from "../views/viewsUser/registroView.vue";
 
 
 // Bloque para la navegacion 
@@ -38,6 +39,12 @@ const router = createRouter({
         name: 'perfilUser',
         component: PerfilUserView
     },
+    {
+        path: '/registroUser',
+        name: 'registroUser',
+        component: RegistroView
+    },
+
     {
         path: '/dashboarAdmin',
         name: 'dashboarAdmin',
