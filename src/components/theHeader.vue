@@ -2,59 +2,88 @@
   <div class="header">
     <img class="icon" src="../../public/avatar.jpg" alt="avatar del campesino">
     <h1>Campesino 0.1</h1>
-  <!-- Menu desplegable-->
-   <div class="menu-container" ref="menuContainerRef">
-    <div class="menu-icon" @click="toggleMenu">&#9776;</div>
+    <!-- Menu desplegable-->
+    <div class="menu-container" ref="menuContainerRef">
+      <div class="menu-icon" @click="toggleMenu">&#9776;</div>
 
-
-    <div v-if="isMenuOpen" class="dropdown-menu" >
+      <div v-if="isMenuOpen" class="dropdown-menu">
         <ul>
-            <router-link :to="{name: 'perfilUser'}"> <li class="button">Perfil</li></router-link>
-            <router-link  :to="{name: 'productosUser'}"> <li class="button">Productos</li></router-link>
+          <router-link :to="{name: 'perfilUser'}">
+            <li class="button">Perfil</li>
+          </router-link>
+          <router-link :to="{name: 'productosUser'}">
+            <li class="button">Productos</li>
+          </router-link>
+          <li class="button" @click="logout">Cerrar sesión</li>
         </ul>
+      </div>
     </div>
-   </div>
   </div>
 </template>
 
-
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import useApi from '../componsables/useApi'; // tu helper API
+
+const { post, setAuthToken } = useApi();
+const router = useRouter();
 
 const isMenuOpen = ref(false);
-
-
 const menuContainerRef = ref(null);
 
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value;
 }
 
-
 function closeMenu() {
   isMenuOpen.value = false;
 }
 
-
 const handleClickOutside = (event) => {
-  
   if (menuContainerRef.value && !menuContainerRef.value.contains(event.target)) {
     closeMenu();
   }
 };
 
-
 onMounted(() => {
-  
   document.addEventListener('click', handleClickOutside);
-});
 
+  // 🔹 Bloquear retroceso/avance del navegador si no hay sesión
+  window.addEventListener("popstate", checkAuth);
+});
 
 onUnmounted(() => {
-
   document.removeEventListener('click', handleClickOutside);
+  window.removeEventListener("popstate", checkAuth);
 });
+
+// 🔹 Función para validar si hay sesión
+function checkAuth() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    router.replace({ name: "loginUser" }); // fuerza volver al login
+  }
+}
+
+// 🔹 Función para cerrar sesión
+async function logout() {
+  try {
+    await post('/auth/logout'); // API logout
+    alert("Usted a cerrado sesion")
+  } catch (e) {
+    console.warn("Error al cerrar sesión, pero se limpiará de todas formas");
+  }
+
+  // Eliminar token y cabeceras
+  localStorage.removeItem("token");
+  setAuthToken(null);
+
+  // Redirigir al login
+  router.replace({ name: "loginUser" });
+}
 </script>
+
 
 <style scoped>
 .header {

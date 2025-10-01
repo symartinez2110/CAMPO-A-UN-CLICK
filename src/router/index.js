@@ -6,6 +6,8 @@ import ProductosView from "../views/viewsUser/productosView.vue";
 import PerfilUserView from "../views/viewsUser/perfilUserView.vue";
 import DashboarvViews from "../views/viewsAdmin/dashboarvViews.vue";
 import RegistroView from "../views/viewsUser/registroView.vue";
+import GestionProductos from "../views/viewsAdmin/gestionProductos.vue";
+import CategoriasCrud from "../views/viewsAdmin/CategoriasCrud.vue";
 
 
 // Bloque para la navegacion 
@@ -48,7 +50,17 @@ const router = createRouter({
     {
         path: '/dashboarAdmin',
         name: 'dashboarAdmin',
-        component: DashboarvViews
+        component: DashboarvViews,
+        children: [
+            {
+                path: 'productos',
+                component: GestionProductos
+            },
+            {
+                path: 'categorias',
+                component: CategoriasCrud
+            }
+        ]
     }
     ]
 })

@@ -1,5 +1,15 @@
 <script setup>
 import theHeader from '../../components/theHeader.vue';
+import { ref } from "vue";
+
+// Importamos los CRUDs
+import ProductosCrud from './gestionProductos.vue';
+import CategoriasCrud from './CategoriasCrud.vue';
+import VentasCrud from './VentasCrud.vue';
+import UsuariosCrud from './UsuariosCrud.vue';
+
+// Controlar qué vista se muestra en el panel
+const currentView = ref("productos");
 </script>
 
 <template>
@@ -11,25 +21,29 @@ import theHeader from '../../components/theHeader.vue';
     </div>
 
     <div class="dashboard-main-card">
-      
+      <!-- Sidebar -->
       <aside class="dashboard-sidebar">
         <div class="sidebar-icon">⚙️</div>
         <ul>
-          <li>Reporte de ventas</li>
-          <li>Gestionar Productos</li>
-          <li>Gestión de inventario</li>
+          <li @click="currentView = 'ventas'">Reporte de ventas</li>
+          <li @click="currentView = 'productos'">Gestionar Productos</li>
+          <li @click="currentView = 'categorias'">Gestión de categorías</li>
+          <li @click="currentView = 'usuarios'">Gestión de usuarios</li>
         </ul>
       </aside>
 
+      <!-- Contenido dinámico -->
       <main class="dashboard-content">
-        <div class="info-card"></div>
-        <div class="info-card"></div>
-        <div class="info-card"></div>
-        <div class="info-card"></div>
+        <VentasCrud v-if="currentView === 'ventas'" />
+        <ProductosCrud v-if="currentView === 'productos'" />
+        <CategoriasCrud v-if="currentView === 'categorias'" />
+        <UsuariosCrud v-if="currentView === 'usuarios'" />
       </main>
     </div>
   </div>
 </template>
+
+
 
 <style scoped>
 .dashboard-container {
