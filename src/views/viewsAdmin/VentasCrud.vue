@@ -260,6 +260,6 @@ onMounted(() => {
   text-align: center;
 }
 .tabla-ventas th {
-  background: #cceeb3;
+  background: #cceeb3;  
 }
 </style>
