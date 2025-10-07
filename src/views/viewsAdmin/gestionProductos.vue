@@ -6,7 +6,7 @@ import useApi from "../../componsables/useApi";
 const { get, post } = useApi();
 
 // Estados
-const showForm = ref(false); 
+const showForm = ref(false);
 const productos = ref([]);
 const categorias = ref([]);
 
@@ -14,10 +14,10 @@ const categorias = ref([]);
 const nuevoProducto = ref({
   nombre: "",
   descripcion: "",
-  precio: null,
-  cantidad: null,
-  categoriaId: null, // ahora guardamos el id de la categoría
-  imagen: null
+  precio: "",
+  cantidad_disponible: "",
+  id_categoria: "",
+  imagen: ""
 });
 
 // Cargar categorías desde el backend
@@ -51,20 +51,24 @@ function handleFileUpload(event) {
   }
 }
 
-// Simular envío de producto
+// Guardar producto
 async function guardarProducto() {
-  if (!nuevoProducto.value.nombre || !nuevoProducto.value.categoriaId) {
+  if (!nuevoProducto.value.nombre || !nuevoProducto.value.id_categoria) {
     alert("El nombre y la categoría son obligatorios");
     return;
   }
 
-  // Preparar formData para enviar archivo e info
+  // Preparar formData
   const formData = new FormData();
   formData.append("nombre", nuevoProducto.value.nombre);
   formData.append("descripcion", nuevoProducto.value.descripcion);
   formData.append("precio", nuevoProducto.value.precio);
-  formData.append("cantidad_disponible", nuevoProducto.value.cantidad);
-  formData.append("id_categoria", nuevoProducto.value.categoriaId);
+  formData.append("cantidad_disponible", nuevoProducto.value.cantidad_disponible);
+  formData.append("id_categoria", nuevoProducto.value.id_categoria);
+  
+  // 🔹 Temporalmente, mientras no hay autenticación:
+  formData.append("id_campesino", 1);
+
   if (nuevoProducto.value.imagen) {
     formData.append("imagen", nuevoProducto.value.imagen);
   }
@@ -75,7 +79,14 @@ async function guardarProducto() {
     });
     await cargarProductos();
     showForm.value = false;
-    nuevoProducto.value = { nombre: "", descripcion: "", precio: null, cantidad: null, categoriaId: null, imagen: null };
+    nuevoProducto.value = {
+      nombre: "",
+      descripcion: "",
+      precio: "",
+      cantidad_disponible: "",
+      id_categoria: "",
+      imagen: ""
+    };
   } catch (error) {
     console.error("Error al guardar producto:", error);
   }
@@ -111,10 +122,10 @@ onMounted(() => {
         <input v-model="nuevoProducto.precio" type="number" required />
 
         <label>Cantidad disponible:</label>
-        <input v-model="nuevoProducto.cantidad" type="number" required />
+        <input v-model="nuevoProducto.cantidad_disponible" type="number" required />
 
         <label>Categoría:</label>
-        <select v-model="nuevoProducto.categoriaId" required>
+        <select v-model="nuevoProducto.id_categoria" required>
           <option disabled value="">Selecciona una categoría</option>
           <option v-for="c in categorias" :key="c.id_categoria" :value="c.id_categoria">
             {{ c.nombre }}
@@ -156,7 +167,6 @@ onMounted(() => {
     </table>
   </div>
 </template>
-
 
 <style scoped>
 .btn-crear {
