@@ -3,7 +3,7 @@ import axios from "axios";
 import { ref } from "vue";
 
 //Crear una constante que me almacene la ruta para consumir la api 
-const baseURL = 'http://192.168.1.34:3000'
+const baseURL = 'http://10.2.35.54:3000'
 // aqui se decide a que servidor apuntar 
 const api = axios.create({baseURL})
 //Aun no se para que sirve esto 
