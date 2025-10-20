@@ -41,7 +41,8 @@
           <!-- Botón -->
           <div class="form-group">
             <button type="submit" class="button">Registrarse</button>
-          </div>
+           <center> <h3 style="color: #5d9266;">¿Ya tienes cuenta? <router-link :to="{name:'loginUser'}" style="color: #9393e9;"> Inicia sesion</router-link></h3></center>
+          </div> 
         </form>
       </div>
     </div>

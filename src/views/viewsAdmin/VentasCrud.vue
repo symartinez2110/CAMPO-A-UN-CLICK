@@ -8,23 +8,24 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar } from "vue-chartjs";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const { get, post, put, del } = useApi();
+// Incluir 'del' para la eliminación de ventas y detalles.
+const { get, post, put, del } = useApi(); 
 
-// Estados
+// 🎯 ESTADOS GLOBALES
 const ventas = ref([]);
 const productos = ref([]);
 const compradores = ref([]);
-const showForm = ref(false); 
-const showEditForm = ref(false); 
 const loading = ref(false);
 
+// 🎯 ESTADOS DEL CRUD PRINCIPAL (Ventas)
+const showForm = ref(false); 
+const showEditForm = ref(false); 
 const nuevaVenta = ref({
-    id_producto: "",
+    id_producto: "", 
     id_comprador: "",
     cantidad: "",
     monto_total: ""
 });
-
 const ventaAEditar = ref({
     id_venta: null,
     id_producto: "",
@@ -32,6 +33,11 @@ const ventaAEditar = ref({
     cantidad: "",
     monto_total: ""
 });
+
+// 🎯 ESTADOS DEL CRUD ANIDADO (Detalles de Venta)
+const showDetallesModal = ref(false);
+const ventaSeleccionada = ref(null);
+const detallesVenta = ref([]);
 
 // Datos del gráfico (con inicialización segura)
 const chartData = ref({
@@ -41,541 +47,413 @@ const chartData = ref({
             label: "Monto total ($)",
             data: [],
             backgroundColor: "rgba(100,177,41,0.8)",
-            borderRadius: 6
-        }
-    ]
+        },
+    ],
 });
-
-const chartOptions = {
+const chartOptions = ref({
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-        legend: { display: false },
-        title: { display: true, text: "Últimas ventas registradas" }
-    },
     scales: {
-        y: { beginAtZero: true }
+        y: {
+            beginAtZero: true
+        }
     }
-};
+});
 
-// ==================== FUNCIONES ====================
+// ----------------------------------------------------
+// 📌 FUNCIONES DE CARGA Y CÁLCULO
+// ----------------------------------------------------
 
-async function cargarVentas() {
+async function cargarDatosIniciales() {
+    loading.value = true;
     try {
-        const data = await get("/ventas");
+        const [ventasData, productosData, usuariosData] = await Promise.all([
+            get("/ventas"),
+            get("/productos"), 
+            get("/usuarios")
+        ]);
         
-        ventas.value = data
-            .map(v => ({
-                ...v,
-                // Lógica para mostrar producto y cantidad, asumiendo detalles[0]
-                producto_display: v.detalles && v.detalles.length > 0 ? v.detalles[0].producto?.nombre : 'Múltiples/Desconocido',
-                cantidad_display: v.detalles && v.detalles.length > 0 ? v.detalles[0].cantidad : 'N/A',
-                monto_total_display: Number(v.monto_total) || 0
-            }))
-            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        ventas.value = ventasData;
+        productos.value = productosData;
+        compradores.value = usuariosData.filter(u => u.rol === 'comprador' || u.rol === 'campesino');
+        
+        procesarDatosGrafico(ventasData);
 
-        actualizarGrafica();
-    } catch (err) {
-        console.error("Error cargando ventas:", err);
+    } catch (error) {
+        console.error("Error cargando datos iniciales:", error);
+        alert("Hubo un error al cargar las ventas o datos relacionados.");
+    } finally {
+        loading.value = false;
     }
 }
 
-async function cargarProductos() {
-    try {
-        productos.value = await get("/productos");
-    } catch (err) {
-        console.error(err);
-    }
-}
+function procesarDatosGrafico(data) {
+    // Agrupamos ventas por fecha para el gráfico
+    const ventasPorFecha = data.reduce((acc, venta) => {
+        // ✅ CORRECCIÓN CLAVE: Usamos 'venta.fecha' del modelo
+        const fecha = new Date(venta.fecha).toLocaleDateString('es-CO'); 
+        acc[fecha] = (acc[fecha] || 0) + venta.monto_total;
+        return acc;
+    }, {});
 
-async function cargarCompradores() {
-    try {
-        const todosUsuarios = await get("/usuarios");
-        compradores.value = todosUsuarios.filter(u => u.rol === 'comprador' || u.rol === 'admin'); 
-    } catch (err) {
-        console.error(err);
-    }
-}
+    const labels = Object.keys(ventasPorFecha).sort((a, b) => new Date(a) - new Date(b));
+    const dataValues = labels.map(label => ventasPorFecha[label]);
 
-function actualizarGrafica() {
-    if (!ventas.value.length) return;
-    const ultimas = ventas.value.slice(0, 7);
     chartData.value = {
-        labels: ultimas.map(v => v.producto_display ?? "Desconocido"), 
+        labels: labels,
         datasets: [
             {
                 label: "Monto total ($)",
-                data: ultimas.map(v => v.monto_total_display || 0),
+                data: dataValues,
                 backgroundColor: "rgba(100,177,41,0.8)",
-                borderRadius: 6
-            }
-        ]
+            },
+        ],
     };
 }
+
+
+// ----------------------------------------------------
+// 📌 FUNCIONES DEL CRUD DE VENTAS
+// ----------------------------------------------------
 
 async function guardarVenta() {
-    const ventaData = nuevaVenta.value;
-    if (!ventaData.id_producto || !ventaData.id_comprador || !ventaData.cantidad || !ventaData.monto_total) {
-        alert("Todos los campos de la venta son requeridos.");
+    if (!nuevaVenta.value.id_comprador || !nuevaVenta.value.monto_total) {
+        alert("El comprador y el monto total son obligatorios.");
         return;
     }
-    
-    const dataParaBackend = {
-        id_comprador: parseInt(ventaData.id_comprador),
-        monto_total: parseFloat(ventaData.monto_total),
-        items: [
-            {
-                id_producto: parseInt(ventaData.id_producto),
-                cantidad: parseInt(ventaData.cantidad)
-            }
-        ]
-    };
 
     try {
-        loading.value = true;
-        const response = await post("/ventas", dataParaBackend);
+        await post("/ventas", nuevaVenta.value); 
+        alert('Venta creada correctamente.');
         
-        if (response && response.error) {
-            alert(`Error al guardar la venta: ${response.error}`);
-            return;
-        }
-
-        await cargarVentas();
-        nuevaVenta.value = { id_producto: "", id_comprador: "", cantidad: "", monto_total: "" };
         showForm.value = false;
-        alert("Venta registrada con éxito y stock descontado.");
-        
-    } catch (err) {
-        console.error("Error guardando venta:", err);
-        const errorMessage = err.message || "Error al guardar la venta. Verifique la consola para detalles (posiblemente stock insuficiente).";
-        alert(errorMessage);
-    } finally {
-        loading.value = false;
+        nuevaVenta.value = { id_producto: "", id_comprador: "", cantidad: "", monto_total: "" };
+        await cargarDatosIniciales(); 
+    } catch (error) {
+        console.error("Error al guardar venta:", error);
+        alert(`Error al crear venta: ${error.message}`);
     }
 }
 
-
-function abrirEdicion(venta) {
+function cargarVentaParaEditar(venta) {
+    ventaAEditar.value = { ...venta }; 
     showEditForm.value = true;
-    showForm.value = false; 
-
-    // Asume que la venta tiene detalles y toma el primer producto para edición
-    ventaAEditar.value = {
-        id_venta: venta.id_venta,
-        id_producto: venta.detalles && venta.detalles.length > 0 ? venta.detalles[0].id_producto : venta.id_producto, 
-        id_comprador: venta.id_comprador,
-        cantidad: venta.detalles && venta.detalles.length > 0 ? venta.detalles[0].cantidad : venta.cantidad,
-        monto_total: venta.monto_total
-    };
 }
 
 async function actualizarVenta() {
-    if (!ventaAEditar.value.id_producto || !ventaAEditar.value.id_comprador) {
-        alert("Selecciona producto y comprador");
+    try {
+        await put(`/ventas/${ventaAEditar.value.id_venta}`, ventaAEditar.value);
+        alert('Venta actualizada correctamente.');
+        
+        showEditForm.value = false;
+        await cargarDatosIniciales();
+    } catch (error) {
+        console.error("Error al actualizar venta:", error);
+        alert(`Error al actualizar venta: ${error.message}`);
+    }
+}
+
+async function eliminarVenta(id_venta) {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta Venta? ¡Se eliminarán todos sus detalles!')) {
         return;
     }
     
     try {
-        loading.value = true;
-        const id = ventaAEditar.value.id_venta;
-
-        // Nota: Esta estructura PUT puede depender de cómo tu backend maneja la edición de ventas con detalles.
-        await put(`/ventas/${id}`, {
-            id_producto: ventaAEditar.value.id_producto,
-            id_comprador: ventaAEditar.value.id_comprador,
-            cantidad: ventaAEditar.value.cantidad,
-            monto_total: ventaAEditar.value.monto_total
-        });
-
-        await cargarVentas();
-        showEditForm.value = false;
-        alert(`Venta ${id} actualizada con éxito.`);
+        await del(`/ventas/${id_venta}`); 
+        alert('Venta eliminada correctamente.');
+        await cargarDatosIniciales();
     } catch (error) {
-        console.error("Error al actualizar venta:", error);
-        alert("Hubo un error al actualizar la venta.");
+        console.error("Error al eliminar venta:", error);
+        alert(`Error al eliminar venta: ${error.message}. Asegúrate de que el backend pueda eliminar los detalles asociados primero.`);
+    }
+}
+
+// ----------------------------------------------------
+// 📌 FUNCIONES DEL CRUD DE DETALLES 
+// ----------------------------------------------------
+
+async function cargarDetallesVenta(venta) {
+    ventaSeleccionada.value = venta;
+    showDetallesModal.value = true;
+    loading.value = true;
+    detallesVenta.value = [];
+
+    try {
+        // La ruta es '/detalles-venta/venta/:id_venta' sin el prefijo /api
+        const data = await get(`/detalles-venta/venta/${venta.id_venta}`);
+        detallesVenta.value = data;
+    } catch (error) {
+        console.error("Error cargando detalles de venta:", error);
+        detallesVenta.value = [];
+        alert("Error al cargar los detalles de la venta. Revisa la consola.");
     } finally {
         loading.value = false;
     }
 }
 
-
-async function eliminarVenta(id_venta) {
-    if (confirm(`¿Está seguro de que desea eliminar la venta ID: ${id_venta}?`)) {
-        try {
-            loading.value = true;
-            await del(`/ventas/${id_venta}`);
-            await cargarVentas(); 
-            alert(`Venta ${id_venta} eliminada con éxito.`);
-        } catch (error) {
-            console.error("Error al eliminar venta:", error);
-            alert("Hubo un error al eliminar la venta.");
-        } finally {
-            loading.value = false;
-        }
-    }
-}
-
-// Función para descargar CSV (Excel)
-function descargarExcel() {
-    if (!ventas.value.length) {
-        alert("No hay ventas para exportar.");
-        return;
-    }
-
-    const headers = ["ID", "Producto", "Comprador", "Cantidad", "Monto_Total", "Fecha"];
+async function eliminarDetalle(id_detalle) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este producto de la venta?')) return;
     
-    const csvContent = ventas.value.map(v => {
-        const productoNombre = v.producto_display ? `"${v.producto_display.replace(/"/g, '""')}"` : "";
-        const compradorNombre = v.comprador?.Nombre ? `"${v.comprador.Nombre.replace(/"/g, '""')}"` : "";
-        const fechaFormato = new Date(v.fecha).toLocaleString();
-
-        return [
-            v.id_venta,
-            productoNombre,
-            compradorNombre,
-            v.cantidad_display,
-            v.monto_total,
-            `"${fechaFormato}"`
-        ].join(",");
-    }).join("\n");
-
-    const csvFinal = headers.join(",") + "\n" + csvContent;
-    const blob = new Blob([
-        "\ufeff", // Marca BOM para el soporte de UTF-8 en Excel
-        csvFinal
-    ], { type: 'text/csv;charset=utf-8;' });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'registro_ventas.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+        await del(`/detalles-venta/${id_detalle}`);
+        alert('Detalle eliminado correctamente.');
+        
+        if (ventaSeleccionada.value) {
+            await cargarDetallesVenta(ventaSeleccionada.value);
+        }
+        await cargarDatosIniciales();
+    } catch (error) {
+        console.error("Error al eliminar detalle:", error);
+        alert(`Error al eliminar detalle: ${error.message}`);
+    }
 }
 
-
-onMounted(() => {
-    cargarVentas();
-    cargarProductos();
-    cargarCompradores();
-});
+onMounted(cargarDatosIniciales);
 </script>
 
 <template>
-  <div class="ventas-panel-container">
-    <h2>Panel de Ventas</h2>
+    <div class="gestion-container">
+        <h2>Reporte y Gestión de Ventas</h2>
 
-    <div v-if="chartData.labels.length" class="grafica-container">
-      <h3>📈 Últimas Ventas Registradas</h3>
-      <div class="chart-wrapper">
-        <Bar :data="chartData" :options="chartOptions" />
-      </div>
-    </div>
+        <button @click="showForm = true" class="btn-crear">
+            Registrar Nueva Venta
+        </button>
 
-    <hr>
-    
-    <div class="acciones-container">
-      <button class="btn-excel" @click="descargarExcel">
-          Descargar Excel
-      </button>
-      
-      <button class="btn-crear" @click="showForm = !showForm; showEditForm = false">
-        {{ showForm ? "Cancelar Creación" : "Registrar Nueva Venta" }}
-      </button>
-      
-      <button v-if="showEditForm" class="btn-cancelar" @click="showEditForm = false">
-        Cancelar Edición
-      </button>
-    </div>
-    
-    <hr v-if="showForm || showEditForm">
+        <div class="chart-container">
+            <h3>Ventas por Día</h3>
+            <div class="chart-wrapper">
+                <Bar v-if="chartData.labels.length" :data="chartData" :options="chartOptions" />
+                <p v-else>Cargando datos del gráfico...</p>
+            </div>
+        </div>
+        
+        <div v-if="showForm" class="form-overlay">
+            <div class="form-container">
+                <h3>Registrar Nueva Venta</h3>
+                <form @submit.prevent="guardarVenta">
+                    <label for="id_comprador_new">Comprador:</label>
+                    <select id="id_comprador_new" v-model="nuevaVenta.id_comprador" required>
+                        <option value="" disabled>Seleccione un comprador</option>
+                        <option v-for="comprador in compradores" :key="comprador.id_usuario" :value="comprador.id_usuario">
+                            {{ comprador.Nombre }} ({{ comprador.email }})
+                        </option>
+                    </select>
+                    
+                    <label for="monto_total_new">Monto Total (Simulado):</label>
+                    <input type="number" id="monto_total_new" v-model.number="nuevaVenta.monto_total" step="0.01" required>
 
-    <div v-if="showForm" class="form-container">
-      <h3>Registrar Venta</h3>
-      <form @submit.prevent="guardarVenta">
-        <label>Producto:</label>
-        <select v-model="nuevaVenta.id_producto" required>
-          <option disabled value="">Selecciona un producto</option>
-          <option v-for="p in productos" :key="p.id_producto" :value="p.id_producto">
-            {{ p.nombre }}
-          </option>
-        </select>
+                    <label for="id_producto_new">Producto (Opcional):</label>
+                    <select id="id_producto_new" v-model="nuevaVenta.id_producto">
+                        <option value="" disabled>Seleccione un producto</option>
+                        <option v-for="producto in productos" :key="producto.id_producto" :value="producto.id_producto">
+                            {{ producto.nombre }}
+                        </option>
+                    </select>
 
-        <label>Comprador:</label>
-        <select v-model="nuevaVenta.id_comprador" required>
-          <option disabled value="">Selecciona un comprador</option>
-          <option v-for="c in compradores" :key="c.id_usuario" :value="c.id_usuario">
-            {{ c.Nombre }}
-          </option>
-        </select>
+                    <label for="cantidad_new">Cantidad (Opcional):</label>
+                    <input type="number" id="cantidad_new" v-model.number="nuevaVenta.cantidad">
 
-        <label>Cantidad:</label>
-        <input v-model="nuevaVenta.cantidad" type="number" min="1" required />
+                    <button type="submit" class="btn-guardar">Guardar Venta</button>
+                    <button type="button" @click="showForm = false" class="btn-cancelar">Cancelar</button>
+                </form>
+            </div>
+        </div>
 
-        <label>Monto total ($):</label>
-        <input v-model="nuevaVenta.monto_total" type="number" min="1" required />
+        <div v-if="showEditForm" class="form-overlay">
+            <div class="form-container">
+                <h3>Editar Venta #{{ ventaAEditar.id_venta }}</h3>
+                <form @submit.prevent="actualizarVenta">
+                    <label for="id_comprador_edit">Comprador:</label>
+                    <select id="id_comprador_edit" v-model="ventaAEditar.id_comprador" required>
+                        <option v-for="comprador in compradores" :key="comprador.id_usuario" :value="comprador.id_usuario">
+                            {{ comprador.Nombre }} ({{ comprador.email }})
+                        </option>
+                    </select>
 
-        <button type="submit" class="btn-guardar" :disabled="loading">
-          {{ loading ? "Guardando..." : "Guardar Venta" }}
-        </button>
-      </form>
-    </div>
+                    <label for="monto_total_edit">Monto Total:</label>
+                    <input type="number" id="monto_total_edit" v-model.number="ventaAEditar.monto_total" step="0.01" required>
 
-    <div v-if="showEditForm" class="form-container">
-      <h3>Editar Venta ID: {{ ventaAEditar.id_venta }}</h3>
-      <form @submit.prevent="actualizarVenta">
-        <label>Producto:</label>
-        <select v-model="ventaAEditar.id_producto" required>
-          <option disabled value="">Selecciona un producto</option>
-          <option v-for="p in productos" :key="p.id_producto" :value="p.id_producto">
-            {{ p.nombre }}
-          </option>
-        </select>
+                    <button type="submit" class="btn-actualizar">Actualizar Venta</button>
+                    <button type="button" @click="showEditForm = false" class="btn-cancelar">Cancelar</button>
+                </form>
+            </div>
+        </div>
 
-        <label>Comprador:</label>
-        <select v-model="ventaAEditar.id_comprador" required>
-          <option disabled value="">Selecciona un comprador</option>
-          <option v-for="c in compradores" :key="c.id_usuario" :value="c.id_usuario">
-            {{ c.Nombre }}
-          </option>
-        </select>
 
-        <label>Cantidad:</label>
-        <input v-model="ventaAEditar.cantidad" type="number" min="1" required />
+        <div class="data-table-section">
+            <h3 style="margin-bottom: 10px;">Ventas Registradas</h3>
+            
+            <div v-if="loading" class="loading-message">Cargando ventas...</div>
 
-        <label>Monto total ($):</label>
-        <input v-model="ventaAEditar.monto_total" type="number" min="1" required />
+            <div v-else-if="ventas.length" class="tabla-scroll-container">
+                <table class="tabla-ventas">
+                    <thead>
+                        <tr>
+                            <th>ID Venta</th>
+                            <th>Fecha</th>
+                            <th>Comprador</th>
+                            <th>Monto Total</th>
+                            <th style="width: 200px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="venta in ventas" :key="venta.id_venta">
+                            <td>{{ venta.id_venta }}</td>
+                            <td>{{ new Date(venta.fecha).toLocaleDateString() }}</td> 
+                            <td>{{ venta.comprador ? venta.comprador.Nombre : 'N/A' }}</td>
+                            <td class="monto-total-col">${{ venta.monto_total ? venta.monto_total.toFixed(2) : '0.00' }}</td>
+                            <td>
+                                <button @click="cargarDetallesVenta(venta)" class="btn-ver-detalles">
+                                    Detalles
+                                </button>
+                                <button @click="cargarVentaParaEditar(venta)" class="btn-editar">
+                                    Editar
+                                </button>
+                                <button @click="eliminarVenta(venta.id_venta)" class="btn-eliminar">
+                                    Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p v-else>No hay ventas registradas.</p>
+        </div>
+        
+        <div v-if="showDetallesModal" class="detalles-modal-overlay">
+            <div class="detalles-modal-content">
+                <div class="modal-header">
+                    <h3>Detalles de Venta #{{ ventaSeleccionada.id_venta }}</h3>
+                    <button @click="showDetallesModal = false" class="btn-cerrar-x">×</button>
+                </div>
+                
+                <div class="modal-body">
+                    <p class="venta-info" v-if="ventaSeleccionada.comprador">
+                        **Comprador:** {{ ventaSeleccionada.comprador.Nombre }} | 
+                        **Fecha:** {{ new Date(ventaSeleccionada.fecha).toLocaleDateString() }} |
+                        **Total:** ${{ ventaSeleccionada.monto_total ? ventaSeleccionada.monto_total.toFixed(2) : '0.00' }}
+                    </p>
 
-        <button type="submit" class="btn-actualizar" :disabled="loading">
-          {{ loading ? "Actualizando..." : "Actualizar Venta" }}
-        </button>
-      </form>
-    </div>
+                    <div v-if="loading && detallesVenta.length === 0" class="loading-message">Cargando detalles...</div>
 
-        <div v-if="ventas.length" class="tabla-scroll-container">
-      <table class="tabla-ventas">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Producto</th>
-            <th>Comprador</th>
-            <th>Cantidad</th>
-            <th>Monto Total</th>
-            <th>Fecha</th>
-            <th>Acciones</th> 
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="v in ventas" :key="v.id_venta">
-            <td>{{ v.id_venta }}</td>
-            <td>{{ v.producto_display }}</td>
-            <td>{{ v.comprador?.Nombre }}</td>
-            <td>{{ v.cantidad_display }}</td>
-            <td>${{ v.monto_total_display.toFixed(2) }}</td>
-            <td>{{ new Date(v.fecha).toLocaleString() }}</td>
-            <td>
-              <button class="btn-editar" @click="abrirEdicion(v)">Editar</button>
-              <button class="btn-eliminar" @click="eliminarVenta(v.id_venta)">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+                    <div v-else-if="detallesVenta.length" class="tabla-scroll-detalles">
+                        <table class="tabla-detalles">
+                            <thead>
+                                <tr>
+                                    <th>ID Detalle</th>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unitario</th>
+                                    <th>Subtotal</th>
+                                    <th style="width: 120px;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="detalle in detallesVenta" :key="detalle.id_detalle">
+                                    <td>{{ detalle.id_detalle }}</td>
+                                    <td>{{ detalle.producto ? detalle.producto.nombre : 'N/A' }}</td>
+                                    <td>{{ detalle.cantidad }}</td>
+                                    <td>${{ detalle.precio_unitario.toFixed(2) }}</td>
+                                    <td>${{ (detalle.cantidad * detalle.precio_unitario).toFixed(2) }}</td>
+                                    <td>
+                                        <button @click="eliminarDetalle(detalle.id_detalle)" class="btn-eliminar-detalle">
+                                            Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p v-else-if="!loading">Esta venta no tiene detalles registrados.</p>
+                </div>
+                
+                <div class="modal-footer">
+                    <button @click="showDetallesModal = false" class="btn-cancelar">
+                        Cerrar Detalles
+                    </button>
+                </div>
+            </div>
+        </div>
 
-    <p v-else>No hay ventas registradas aún.</p>
-  </div>
+    </div>
 </template>
 
 <style scoped>
-/* -------------------- AJUSTE PRINCIPAL DEL CONTENEDOR (SOLUCIÓN AL DESPLAZAMIENTO) -------------------- */
-.ventas-panel-container {
-    /* Ocupa todo el ancho que le da el contenedor padre (como .dashboard-content) */
-    width: 100%; 
-    /* Añade padding a los lados para que el contenido no se pegue al borde */
-    padding: 20px 30px; 
-    /* Asegura que el contenido se comporte bien si la pantalla es muy grande */
-    max-width: 1400px; 
-    box-sizing: border-box; 
-    margin: 0; /* Asegura que no haya margen automático, alineando a la izquierda */
+/* ---------------------------------------------------- */
+/* 🎨 ESTILOS GENERALES (MANTENIDOS) */
+/* ---------------------------------------------------- */
+.gestion-container {
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-
-
 h2 {
-    color: #4CAF50; 
+    color: #4a8d20;
     border-bottom: 2px solid #cceeb3;
     padding-bottom: 10px;
-    margin-bottom: 25px;
-}
-hr {
-    border: none;
-    border-top: 1px solid #ddd;
-    margin: 20px 0;
-}
-
-/* -------------------- GRÁFICO -------------------- */
-.grafica-container {
-    background: #f9fff4;
-    padding: 16px;
-    border-radius: 10px;
-    margin-bottom: 18px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-.chart-wrapper {
-    width: 100%;
-    height: 320px;
-}
-
-/* -------------------- BOTONES PRINCIPALES -------------------- */
-.acciones-container {
-    display: flex; 
-    gap: 10px; 
-    margin-bottom: 15px;
-}
-
-.btn-excel {
-    background: #27ae60; 
-    border: none;
-    color: white;
-    padding: 10px 15px; 
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.3s;
-}
-.btn-excel:hover {
-    background: #229954;
-}
-
-.btn-crear {
-    background: #64b129;
-    border: none;
-    color: white;
-    padding: 10px 15px; 
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.3s;
-}
-.btn-crear:hover {
-    background: #4a8d20;
-}
-
-.btn-cancelar {
-    background: #7f8c8d;
-    color: white;
-    border: none;
-    padding: 10px 15px; 
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.3s;
-}
-.btn-cancelar:hover {
-    background: #6c757d;
-}
-
-/* -------------------- FORMULARIOS (CREAR/EDITAR) -------------------- */
-.form-container {
-    background: #f2ffe6;
-    padding: 20px; 
-    border-radius: 10px; 
     margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-.form-container h3 {
-    margin-top: 0;
-    color: #333;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e0e0e0;
-    margin-bottom: 15px;
-}
-.form-container label {
-    display: block;
-    margin-top: 10px;
-    font-weight: 700;
-    color: #333;
-}
-.form-container input,
-.form-container select {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    box-sizing: border-box;
+.btn-crear {
+    background: #4a8d20;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-bottom: 20px;
     font-size: 1em;
 }
-.btn-guardar, .btn-actualizar {
-    margin-top: 15px;
-    padding: 10px 15px;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.3s;
-    font-weight: 600;
+.btn-crear:hover {
+    background: #3c721c;
+}
+.loading-message {
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    color: #777;
 }
 
-.btn-guardar {
-    background: #64b129;
+/* ---------------------------------------------------- */
+/* 📊 ESTILOS DE GRÁFICO */
+/* ---------------------------------------------------- */
+.chart-container {
+    margin-bottom: 30px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #f9f9f9;
 }
-.btn-guardar:hover {
-    background: #4a8d20;
+.chart-wrapper {
+    height: 300px;
+    width: 100%;
 }
 
-.btn-actualizar {
-    background: #2980b9;
-}
-.btn-actualizar:hover {
-    background: #1f6f9c;
-}
-
-/* -------------------- TABLA DE VENTAS (MODERNA Y CORREGIDA) -------------------- */
-/* -------------------- TABLA DE VENTAS (MODERNA Y CORREGIDA) -------------------- */
-
-/* Contenedor para manejar el scroll horizontal si es necesario */
+/* ---------------------------------------------------- */
+/* 📋 ESTILOS DE TABLA PRINCIPAL (Ajustados para coherencia y compacidad) */
+/* ---------------------------------------------------- */
 .tabla-scroll-container {
-    overflow-x: auto; 
-    margin-bottom: 20px;
+    overflow-x: auto;
 }
 
 .tabla-ventas {
     width: 100%;
-    /* Asegura que la tabla no sea demasiado estrecha */
-    min-width: 800px; 
-    /* CLAVE 1: Usa separate para permitir border-radius, pero con espaciado cero */
-    border-collapse: separate; 
-    border-spacing: 0; 
-    
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    overflow: hidden; 
-    border-radius: 8px; /* Bordes redondeados en la tabla */
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 0.9em; 
 }
 
-/* Encabezado */
-.tabla-ventas thead tr {
-    background: #cceeb3; 
-    color: #333;
-}
 .tabla-ventas th,
 .tabla-ventas td {
-    padding: 12px 10px;
+    padding: 10px 8px; /* Compacto */
     text-align: center;
     border-right: 1px solid #e0e0e0; 
 }
-.tabla-ventas th:last-child,
-.tabla-ventas td:last-child {
-    border-right: none;
-}
 
-/* Filas del Cuerpo */
-.tabla-ventas tbody tr {
-    /* Borde inferior para separar las filas (cebrado) */
-    border-bottom: 1px solid #e0e0e0; 
-}
-
-/* CLAVE 2: Elimina la línea divisoria debajo de la última fila de datos */
-.tabla-ventas tbody tr:last-child {
-    border-bottom: none;
+.tabla-ventas th {
+    background: #cceeb3;
+    color: #333;
+    font-weight: bold;
 }
 
 .tabla-ventas tbody tr:nth-child(odd) {
@@ -585,39 +463,210 @@ hr {
     background-color: #ffffff;
 }
 
-/* Destacar Monto Total */
-.tabla-ventas td:nth-child(5) {
+.monto-total-col {
     font-weight: bold; 
     color: #27ae60;
 }
 
-/* Botones de acción (mantener los estilos de botones que ya definiste en VentasCrud) */
-
-/* -------------------- BOTONES DE ACCIÓN DE LA TABLA -------------------- */
-.btn-editar, .btn-eliminar {
-    margin: 0 5px;
-    padding: 6px 10px; 
+/* ---------------------------------------------------- */
+/* 💥 ESTILOS DE BOTONES DE ACCIÓN */
+/* ---------------------------------------------------- */
+.btn-ver-detalles, .btn-editar, .btn-eliminar {
     border: none;
+    padding: 6px 8px;
     cursor: pointer;
     border-radius: 4px;
-    font-size: 0.9em;
-    transition: opacity 0.3s;
+    margin-right: 5px;
+    font-size: 0.85em;
+    white-space: nowrap; 
 }
+
+.btn-ver-detalles {
+    background: #2980b9; 
+    color: white;
+}
+.btn-ver-detalles:hover {
+    background: #1f6f9f;
+}
+
 .btn-editar {
-    background: #f1c40f; 
+    background: #ffc107; 
     color: #333;
 }
 .btn-editar:hover {
-    opacity: 0.8;
+    background: #ffb300;
 }
+
 .btn-eliminar {
-    background: #e74c3c; 
+    background: #e74c3c;
     color: white;
 }
 .btn-eliminar:hover {
-    opacity: 0.8;
+    background: #c0392b;
+}
+
+/* ---------------------------------------------------- */
+/* 📝 ESTILOS DE FORMULARIO (Creación y Edición) */
+/* ---------------------------------------------------- */
+.form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.form-container {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+}
+.form-container label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+.form-container input,
+.form-container select { 
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box; 
+}
+.btn-guardar, .btn-actualizar, .btn-cancelar {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 15px;
+    margin-right: 10px;
+}
+
+.btn-guardar {
+    background: #64b129;
+    color: white;
+}
+.btn-guardar:hover {
+    background: #4a8d20;
+}
+.btn-actualizar {
+    background: #2980b9; 
+    color: white;
+}
+.btn-actualizar:hover {
+    background: #1f6f9f;
+}
+.btn-cancelar {
+    background: #7f8c8d;
+    color: white;
+}
+.btn-cancelar:hover {
+    background: #6c7a7b;
 }
 
 
+/* ---------------------------------------------------- */
+/* 🧱 ESTILOS DEL MODAL DE DETALLES */
+/* ---------------------------------------------------- */
+.detalles-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
 
+.detalles-modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.btn-cerrar-x {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #999;
+}
+
+.venta-info {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f0fff0;
+    border-left: 4px solid #4a8d20;
+    font-weight: 500;
+}
+
+.tabla-scroll-detalles {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+/* Estilos de la tabla de detalles */
+.tabla-detalles {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+
+.tabla-detalles th,
+.tabla-detalles td {
+    padding: 8px 6px;
+    text-align: center;
+    border-right: 1px solid #eee; 
+}
+.tabla-detalles th {
+    background: #cceeb3;
+    color: #333;
+}
+
+.btn-eliminar-detalle {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 0.8em;
+}
+.btn-eliminar-detalle:hover {
+    background: #c0392b;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+}
 </style>

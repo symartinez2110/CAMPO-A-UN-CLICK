@@ -1,39 +1,88 @@
 <template>
   <div class="header">
-    <img class="icon" src="../../public/avatar.jpg" alt="avatar del campesino">
-    <h1>Campesino 0.1</h1>
-    <!-- Menu desplegable-->
-    <div class="menu-container" ref="menuContainerRef">
-      <div class="menu-icon" @click="toggleMenu">&#9776;</div>
+    <router-link :to="{name: 'homeUser'}"><img class="icon" src="../../public/logo.png" alt="Logo Campo A un click"></router-link>
+    
+    <div class="title-user-container"> 
+      <h1> <p class="logged-user-name" v-if="userName">Bienvenido, {{ userName }}</p></h1>
+      
+    </div>
+    
+    <div class="actions-container">
+      <div class="cart-icon" title="Ver Carrito" @click="toggleCart">&#128722;</div>
 
-      <div v-if="isMenuOpen" class="dropdown-menu">
-        <ul>
-          <router-link :to="{name: 'perfilUser'}">
-            <li class="button">Perfil</li>
-          </router-link>
-          <router-link :to="{name: 'productosUser'}">
-            <li class="button">Productos</li>
-          </router-link>
-          <li class="button" @click="logout">Cerrar sesión</li>
-        </ul>
+      <div class="menu-container" ref="menuContainerRef">
+        <div class="menu-icon" @click="toggleMenu">&#9776;</div>
+
+        <div v-if="isMenuOpen" class="dropdown-menu">
+          <ul>
+            <router-link :to="{name: 'perfilUser'}">
+              <li class="button">Perfil</li>
+            </router-link>
+            
+            <router-link :to="{name: 'dashboarAdmin'}" v-if="userRole === 'campesino'">
+                <li class="button">Panel de Campesino</li>
+            </router-link>
+            
+            <router-link :to="{name: 'productosUser'}">
+              <li class="button">Productos</li>
+            </router-link>
+            
+            <li class="button" @click="logout">Cerrar sesión</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
+  
+  <CarritoResumenSidebar v-if="isCartOpen" @close="isCartOpen = false" />
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import useApi from '../componsables/useApi'; // tu helper API
+import useApi from '../componsables/useApi'; 
+import CarritoResumenSidebar from './CarritoResumenSidebar.vue'; 
 
-const { post, setAuthToken } = useApi();
+const { get, post, setAuthToken } = useApi();
 const router = useRouter();
 
 const isMenuOpen = ref(false);
+const isCartOpen = ref(false); 
 const menuContainerRef = ref(null);
+
+const userName = ref(null); 
+// 💡 NUEVO ESTADO: para almacenar el rol del usuario
+const userRole = ref(null); 
+
+
+// 💡 MODIFICADO: Ahora obtiene y guarda el rol
+async function fetchUserProfile() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    // 🔹 Endpoint: Obtenemos toda la información del usuario logueado
+    const data = await get('/auth/me'); 
+    
+    // 🔹 Guardar el Nombre y el Rol
+    userName.value = data.Nombre || 'Usuario'; 
+    userRole.value = data.rol; // <-- CLAVE: Guardamos el rol aquí
+
+  } catch (error) {
+    console.error("Error al cargar el perfil del usuario:", error);
+    userName.value = 'Usuario'; 
+    userRole.value = null;
+  }
+}
 
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value;
+  isCartOpen.value = false; 
+}
+
+function toggleCart() {
+  isCartOpen.value = !isCartOpen.value;
+  isMenuOpen.value = false; 
 }
 
 function closeMenu() {
@@ -48,9 +97,10 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
-
-  // 🔹 Bloquear retroceso/avance del navegador si no hay sesión
   window.addEventListener("popstate", checkAuth);
+  
+  // LLAMADA: Cargar el perfil (y el rol) al montar el componente
+  fetchUserProfile();
 });
 
 onUnmounted(() => {
@@ -58,34 +108,30 @@ onUnmounted(() => {
   window.removeEventListener("popstate", checkAuth);
 });
 
-// 🔹 Función para validar si hay sesión
 function checkAuth() {
   const token = localStorage.getItem("token");
   if (!token) {
-    router.replace({ name: "loginUser" }); // fuerza volver al login
+    router.replace({ name: "loginUser" }); 
   }
 }
 
-// 🔹 Función para cerrar sesión
 async function logout() {
   try {
-    await post('/auth/logout'); // API logout
+    await post('/auth/logout'); 
     alert("Usted a cerrado sesion")
   } catch (e) {
     console.warn("Error al cerrar sesión, pero se limpiará de todas formas");
   }
 
-  // Eliminar token y cabeceras
   localStorage.removeItem("token");
   setAuthToken(null);
-
-  // Redirigir al login
   router.replace({ name: "loginUser" });
 }
 </script>
 
 
 <style scoped>
+/* (Mantén los estilos que proporcionaste sin cambios) */
 .header {
   width: 100%;
   margin-top: -0.6rem;
@@ -96,8 +142,14 @@ async function logout() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-   box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15);
+}
 
+.actions-container {
+    display: flex;
+    align-items: center;
+    gap: 15px; 
+    margin-right: 20px;
 }
 
 .button {
@@ -130,16 +182,27 @@ a:-webkit-any-link {
 }
 
 .icon{
-    height: 70px;
-    width: 70px;
-    border-radius: 1rem;
+    height: 100px;
+    width: 100px;
     margin-top: 0.5rem;
     margin-left: 0.8rem;
+    font-weight: bolder;
 }
+
+.cart-icon {
+    font-size: x-large;
+    cursor: pointer;
+    padding: 5px; 
+    transition: color 0.3s;
+}
+
+.cart-icon:hover {
+    color: #f9f9f9;
+}
+
 .menu-icon {
- margin-right: 2.5rem;
- font-size: x-large;
- user-select: none;
+    font-size: x-large;
+    user-select: none;
 }
 
 .menu-icon:hover{
@@ -154,19 +217,19 @@ a:-webkit-any-link {
 /* Estilos del menú desplegable */
 .dropdown-menu {
   position: absolute;
-  top: 120%; /* Posiciona el menú un poco debajo del ícono */
-  right: 0; /* Lo alinea a la derecha del contenedor */
-  background-color: #c7f49d; /* Un verde similar al de la imagen */
+  top: 120%; 
+  right: 0; 
+  background-color: #c7f49d; 
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   padding: 10px 15px;
   margin: 1rem;
-  width: max-content; /* El ancho se ajusta al contenido */
-  z-index: 100; /* Asegura que esté por encima de otros elementos */
+  width: max-content; 
+  z-index: 100; 
   
 }
 .dropdown-menu ul {
-  list-style-type: none; /* Quita los puntos de la lista */
+  list-style-type: none; 
   padding: 0;
   margin: 0;
 }
@@ -178,10 +241,10 @@ a:-webkit-any-link {
   font-size: 1rem;
   font-weight: 500;
   border-radius: 6px;
-  transition: background-color 0.2s; /* Efecto suave al pasar el ratón */
+  transition: background-color 0.2s; 
 }
 
 .dropdown-menu li:hover {
-  background-color: rgba(0, 0, 0, 0.08); /* Resaltado sutil */
+  background-color: rgba(0, 0, 0, 0.08); 
 }
 </style>

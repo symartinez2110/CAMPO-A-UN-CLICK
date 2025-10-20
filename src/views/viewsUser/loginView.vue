@@ -16,7 +16,7 @@
           </div>
           <button type="submit" class="button">Acceder</button>
         </form>
-        <h3 style="color: #5d9266;">No tienes cuenta <router-link :to="{name:'registroUser'}" style="color: #9393e9;"> Registrate </router-link></h3>
+       <center> <h3 style="color: #5d9266;">No tienes cuenta <router-link :to="{name:'registroUser'}" style="color: #9393e9;"> Registrate </router-link></h3></center>
       </div>
     </div>
   </div>
@@ -33,6 +33,7 @@ const router = useRouter()
 const username = ref('')
 const password = ref('')
 
+// loginView.vue
 const handleLogin = async () => {
   try {
     const res = await post('/auth/login', {
@@ -42,10 +43,12 @@ const handleLogin = async () => {
 
     console.log("Respuesta del login:", res)
 
-    // Guardar token y rol en localStorage
+    // 🛑 CORRECCIÓN: Guardamos el objeto completo 'res' bajo la clave 'user'
+    localStorage.setItem('user', JSON.stringify(res)) 
+    // Mantenemos estas por compatibilidad, pero lo principal es 'user'
     localStorage.setItem('token', res.token)
     localStorage.setItem('rol', res.rol)
-
+    
     // Redirigir según rol
     if (res.rol === 'admin') {
       router.push({ name: 'dashboarAdmin' })
