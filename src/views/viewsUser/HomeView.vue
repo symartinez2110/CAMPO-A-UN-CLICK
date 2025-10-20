@@ -2,8 +2,12 @@
 import { ref, onMounted } from 'vue';
 import theHeader from '../../components/theHeader.vue';
 import useApi from "../../componsables/useApi"; 
+import useCartStore from "../../store/useCartStore"; // 👈 NUEVA IMPORTACIÓN DEL STORE
 
 const { get, post } = useApi(); 
+// Obtenemos las funciones para actualizar el carrito desde el store
+const { fetchCart, updateCart } = useCartStore(); // 👈 NUEVA LÍNEA
+
 const productos = ref([]); 
 const loading = ref(false); 
 
@@ -15,85 +19,112 @@ const currentCompradorId = ref(null);
 
 // ==================== LÓGICA DE DATOS Y ESTADO ====================
 
-// 💡 Nuevo: Obtiene el ID del usuario logueado para usarlo en el carrito
+// 💡 MODIFICADO: Obtiene el ID del usuario logueado y LUEGO carga su carrito
 async function fetchCurrentUserId() {
-  try {
-    // Endpoint para obtener datos del usuario autenticado (asumiendo que usa el token JWT)
-    const data = await get('/auth/me'); 
-    // Usamos 'id_usuario' o 'id' dependiendo de tu backend
-    currentCompradorId.value = data.id_usuario || data.id || null; 
-  } catch (error) {
-    // Si falla, el usuario no está logueado o el token expiró. El ID queda en null.
-    console.warn("Usuario no autenticado para acciones de carrito.", error);
-    currentCompradorId.value = null;
-  }
+  try {
+    // Endpoint para obtener datos del usuario autenticado (asumiendo que usa el token JWT)
+    const data = await get('/auth/me'); 
+    // Usamos 'id_usuario' o 'id' dependiendo de tu backend
+    currentCompradorId.value = data.id_usuario || data.id || null; 
+
+    // 💡 CLAVE: Una vez que tenemos el ID del comprador, cargamos el carrito
+    if (currentCompradorId.value) {
+        await fetchCart(currentCompradorId.value);
+    }
+
+  } catch (error) {
+    // Si falla, el usuario no está logueado o el token expiró. El ID queda en null.
+    console.warn("Usuario no autenticado para acciones de carrito.", error);
+    currentCompradorId.value = null;
+  }
 }
 
 async function cargarProductos() {
-  loading.value = true;
-  try {
-    // Endpoint principal para mostrar productos
-    const data = await get("/productos"); 
-    productos.value = data;
-  } catch (error) {
-    console.error("Error cargando productos:", error);
-    productos.value = [];
-  } finally {
-    loading.value = false;
-  }
+  loading.value = true;
+  try {
+    // Endpoint principal para mostrar productos
+    const data = await get("/productos"); 
+    productos.value = data;
+  } catch (error) {
+    console.error("Error cargando productos:", error);
+    productos.value = [];
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(() => {
-  // 1. Obtiene el ID del comprador
-  fetchCurrentUserId(); 
-  // 2. Carga los productos
-  cargarProductos();
+  // 1. Obtiene el ID del comprador (y ahora también carga el carrito)
+  fetchCurrentUserId(); 
+  // 2. Carga los productos
+  cargarProductos();
 });
 
 
-// ==================== FUNCIONALIDADES DEL USUARIO ====================
+// ==================== FUNCIONALIDADES DEL USUARIO (MODIFICADO) ====================
 
 function getProductImageUrl(imagenFilename) {
-    // 🛑 CORRECCIÓN CLAVE: La ruta apunta a tu Express (localhost:3000) 
-    // y al directorio estático '/uploads' configurado en tu app.js.
-  	if (imagenFilename) {
-    	return `http://localhost:3000/uploads/${imagenFilename}`;
-  	}
-  	return '/foto_producto_default.jpg'; // Imagen por defecto en caso de que no haya nombre
+    // 🛑 CORRECCIÓN CLAVE: La ruta apunta a tu Express (localhost:3000) 
+    // y al directorio estático '/uploads' configurado en tu app.js.
+    if (imagenFilename) {
+      return `http://localhost:3000/uploads/${imagenFilename}`;
+    }
+    return '/foto_producto_default.jpg'; // Imagen por defecto en caso de que no haya nombre
 }
 
 function getInitial(name) {
-  if (!name) return '?';
-  return name.charAt(0).toUpperCase();
+  if (!name) return '?';
+  return name.charAt(0).toUpperCase();
 }
 
+// 💡 NUEVA FUNCIÓN: Genera el enlace de llamada (tel:)
+function getPhoneLink(phone) {
+    // Limpia el número de cualquier caracter no numérico (excepto el signo +) y añade el prefijo 'tel:'
+    const cleanPhone = phone ? String(phone).replace(/[^0-9+]/g, '') : '';
+    return `tel:${cleanPhone}`;
+}
+
+
+// Función MODIFICADA para filtrar el rol y preparar datos
 function openContactModal(campesino) {
-  selectedCampesino.value = campesino;
-  showContactModal.value = true;
+  // Almacenamos SOLO los datos relevantes, OMITIENDO 'rol'
+  selectedCampesino.value = {
+    Nombre: campesino?.Nombre || 'N/A',
+    email: campesino?.email || 'N/A',
+    // Aseguramos que el campo de teléfono se use si existe
+    telefono: campesino?.telefono || 'No disponible', 
+  };
+  showContactModal.value = true;
 }
 
-// 🔴 AGILIZADO Y CORREGIDO: Agrega el producto al carrito usando el ID real
+// 🔴 MODIFICADO: Agrega el producto al carrito y AHORA actualiza el estado global
 async function addToCart(product) {
-  if (!currentCompradorId.value) {
-    alert("Debes iniciar sesión para agregar productos al carrito.");
-    return;
-  }
+  if (!currentCompradorId.value) {
+    alert("Debes iniciar sesión para agregar productos al carrito.");
+    return;
+  }
 
-  const payload = {
-    id_producto: product.id_producto,
-    // Usamos el ID del comprador obtenido
-    id_comprador: currentCompradorId.value, 
-    cantidad: 1, 
-    precio: product.precio 
-  };
+  const payload = {
+    id_producto: product.id_producto,
+    // Usamos el ID del comprador obtenido
+    id_comprador: currentCompradorId.value, 
+    cantidad: 1, 
+    precio: product.precio 
+  };
 
-  try {
-    await post("/carrito", payload); 
-    alert(`✅ ¡${product.nombre} agregado al carrito con éxito!`);
-  } catch (error) {
-    console.error("Error al agregar al carrito:", error);
-    alert("❌ Error al agregar producto al carrito.");
-  }
+  try {
+    await post("/carrito", payload); 
+    
+    // 💡 CLAVE: Vuelve a cargar los datos del carrito para actualizar la sidebar/vista
+    await updateCart(currentCompradorId.value);
+
+    alert(`✅ ¡${product.nombre} agregado al carrito con éxito!`);
+  } catch (error) {
+    console.error("Error al agregar al carrito:", error);
+    // Muestra un mensaje de error más específico si el backend lo proporciona
+    const errorMessage = error.response?.data?.error || "Error al agregar producto al carrito.";
+    alert(`❌ ${errorMessage}`);
+  }
 }
 </script>
 
@@ -165,8 +196,13 @@ async function addToCart(product) {
           <h4>Datos de Contacto del Vendedor</h4>
           <p><strong>Nombre:</strong> {{ selectedCampesino.Nombre }}</p>
           <p><strong>Email:</strong> {{ selectedCampesino.email }}</p>
-          <p><strong>Teléfono:</strong> {{ selectedCampesino.telefono || 'No disponible' }}</p>
-          <p><strong>Rol:</strong> {{ selectedCampesino.rol }}</p>
+          <p><strong>Teléfono:</strong> {{ selectedCampesino.telefono }}</p>
+          <a :href="getPhoneLink(selectedCampesino.telefono)" 
+             class="btn-llamar"
+             :class="{ 'disabled': selectedCampesino.telefono === 'No disponible' }">
+             📞 Llamar Ahora
+          </a>
+          
         </div>
         <div v-else>
           <p>Información del vendedor no disponible.</p>
@@ -177,6 +213,7 @@ async function addToCart(product) {
 </template>
 
 <style scoped>
+/* Estilos del modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -217,6 +254,33 @@ async function addToCart(product) {
   margin-bottom: 15px;
 }
 
+/* 📞 Estilo para el botón de llamada (AÑADIDO) */
+.btn-llamar {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    margin-top: 20px;
+    background-color: #2196F3; /* Azul para llamar */
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.btn-llamar:hover:not(.disabled) {
+    background-color: #0b7dda;
+}
+
+.btn-llamar.disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    pointer-events: none; /* Asegura que no se pueda clickear */
+}
+
+/* Resto de estilos */
 .avatar-circle {
   width: 50px;
   height: 50px;
@@ -255,7 +319,7 @@ async function addToCart(product) {
   flex-direction: column;
   align-items: center;
   font-family: sans-serif;
-  background-image: url('../../../public/Fondo_Panel_User.jpg');
+  background-image: url('/public/Fondo_Panel_User.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
