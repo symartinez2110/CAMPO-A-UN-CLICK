@@ -27,7 +27,7 @@ const currentView = ref("productos");
           <li @click="currentView = 'ventas'">Reporte de ventas</li>
           <li @click="currentView = 'productos'">Gestionar Productos</li>
           <li @click="currentView = 'categorias'">Gestión de categorías</li>
-          <li @click="currentView = 'usuarios'">Gestión de usuarios</li>
+        <!---  <li @click="currentView = 'usuarios'">Gestión de usuarios</li> -->
         </ul>
       </aside>
 

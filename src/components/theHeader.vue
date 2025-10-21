@@ -155,7 +155,7 @@ async function logout() {
 .button {
   display: flex;
   justify-content: center;
-  width: 65%;
+  width: 90%;
   height: 20px;
   padding: 12px;
   background-color: #AEF379;
