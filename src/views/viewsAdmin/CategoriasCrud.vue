@@ -5,7 +5,7 @@ import useApi from "../../componsables/useApi";
 const { get, post, put, del } = useApi();
 
 const showForm = ref(false);
-const showEditForm = ref(false); // 👈 NUEVO: Estado para el formulario de edición
+const showEditForm = ref(false); // 👈 Estado para el formulario de edición
 const categorias = ref([]);
 
 const nuevaCategoria = ref({
@@ -13,7 +13,7 @@ const nuevaCategoria = ref({
   descripcion: ""
 });
 
-// 👈 NUEVO: Estado para la edición
+// 👈 Estado para la edición
 const categoriaAEditar = ref({
     id_categoria: null,
     nombre: "",
@@ -47,7 +47,7 @@ async function guardarCategoria() {
   }
 }
 
-// 👈 NUEVO: Lógica para abrir el formulario de edición
+// 👈 Lógica para abrir el formulario de edición
 function abrirEdicion(categoria) {
     showEditForm.value = true;
     showForm.value = false; // Ocultar el formulario de creación si está visible
@@ -59,7 +59,7 @@ function abrirEdicion(categoria) {
     };
 }
 
-// 👈 NUEVO: Actualizar categoría (Petición PUT)
+// 👈 Actualizar categoría (Petición PUT)
 async function actualizarCategoria() {
     if (!categoriaAEditar.value.nombre) {
         alert("El nombre es obligatorio");
@@ -83,7 +83,7 @@ async function actualizarCategoria() {
     }
 }
 
-// 👈 NUEVO: Eliminar categoría (Petición DELETE)
+// 👈 Eliminar categoría (Petición DELETE)
 async function eliminarCategoria(id_categoria, nombre_categoria) {
     if (confirm(`¿Está seguro de que desea eliminar la categoría "${nombre_categoria}" (ID: ${id_categoria})?`)) {
         try {
@@ -104,7 +104,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="gestion-container">
     <h2>Gestión de Categorías</h2>
 
     <button class="btn-crear" @click="showForm = !showForm; showEditForm = false">
@@ -145,159 +145,219 @@ onMounted(() => {
     
     <hr v-if="showForm || showEditForm">
 
-    <table class="tabla-productos">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Descripción</th>
-          <th>Acciones</th> </tr>
-      </thead>
-      <tbody>
-        <tr v-for="c in categorias" :key="c.id_categoria">
-          <td>{{ c.id_categoria }}</td>
-          <td>{{ c.nombre }}</td>
-          <td>{{ c.descripcion }}</td>
-          <td>
-            <button class="btn-editar" @click="abrirEdicion(c)">Editar</button>
-            <button class="btn-eliminar" @click="eliminarCategoria(c.id_categoria, c.nombre)">Eliminar</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="tabla-scroll-container">
+        <table class="tabla-productos">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Acciones</th> 
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="c in categorias" :key="c.id_categoria">
+                    <td>{{ c.id_categoria }}</td>
+                    <td>{{ c.nombre }}</td>
+                    <td>{{ c.descripcion }}</td>
+                    <td>
+                        <button class="btn-editar" @click="abrirEdicion(c)">Editar</button>
+                        <button class="btn-eliminar" @click="eliminarCategoria(c.id_categoria, c.nombre)">Eliminar</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
   </div>
 </template>
 
 <style scoped>
-h2 {
-  margin-bottom: 15px;
+/* Estilos del contenedor principal (Añadido para control de desbordamiento) */
+.gestion-container {
+    padding: 20px;
+    overflow-x: hidden; /* Evita el scroll horizontal indeseado del componente */
 }
 
-/* Modificado para dejar espacio para el botón de cancelar */
+h2 {
+    color: #4a8d20; /* Color que armoniza con los estilos anteriores (Verde oscuro) */
+    border-bottom: 2px solid #cceeb3;
+    padding-bottom: 10px;
+    margin-bottom: 20px; 
+}
+
+/* Botones principales de acción */
 .btn-crear {
-  background: #4caf50;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  margin-bottom: 15px;
-  cursor: pointer;
-  border-radius: 5px;
-  margin-right: 10px;
+    background: #4caf50;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-right: 10px;
 }
 
 .btn-crear:hover {
-  background: #45a049;
+    background: #45a049;
 }
 
-/* 👈 NUEVO: Estilo para botón de cancelar */
 .btn-cancelar {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  margin-bottom: 15px;
-  cursor: pointer;
-  border-radius: 5px;
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    border-radius: 5px;
 }
 
 .btn-cancelar:hover {
-  background: #d32f2f;
+    background: #d32f2f;
 }
 
 .form-container {
-  margin-bottom: 20px;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f9f9f9;
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f9f9f9;
+    max-width: 600px; /* Limita el ancho del formulario */
 }
 
 label {
-  display: block;
-  margin-top: 10px;
+    display: block;
+    margin-top: 10px;
 }
 
 input, textarea, select {
-  width: 100%;
-  padding: 8px;
-  margin-top: 5px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-sizing: border-box; /* Asegura que el padding no desborde el ancho */
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box; 
 }
 
 .btn-guardar {
-  background: #2196f3;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  cursor: pointer;
-  border-radius: 5px;
+    background: #2196f3;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-right: 10px; 
 }
 
 .btn-guardar:hover {
-  background: #1976d2;
+    background: #1976d2;
 }
 
-/* 👈 NUEVO: Estilo para botón de actualizar */
 .btn-actualizar {
-  background: #00bcd4;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  cursor: pointer;
-  border-radius: 5px;
+    background: #00bcd4;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-right: 10px; 
 }
 
 .btn-actualizar:hover {
-  background: #0097a7;
+    background: #0097a7;
+}
+
+/* CLAVE: Contenedor de scroll para tablas */
+.tabla-scroll-container {
+    width: 100%;
+    overflow-x: auto; 
+    margin-top: 20px;
 }
 
 .tabla-productos {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+    width: 100%;
+    border-collapse: collapse;
+    /* Ancho mínimo para forzar scroll en móviles */
+    min-width: 600px; 
 }
 
 .tabla-productos th,
 .tabla-productos td {
-  border: 1px solid #c4c3c3;
-  padding: 10px;
-  text-align: left;
+    border: 1px solid #c4c3c3;
+    padding: 10px;
+    text-align: left;
+    font-size: 0.9em;
 }
 
 .tabla-productos th {
-  background: #cceeb3;
+    background: #cceeb3;
 }
 
-/* 👈 NUEVO: Estilos para botones de acción en la tabla */
+/* Estilos para botones de acción en la tabla */
+.btn-editar, .btn-eliminar {
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 0.9em;
+    white-space: nowrap; /* Evita que el texto de los botones se rompa */
+}
+
 .btn-editar {
-  background: #ffc107;
-  color: #333;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 3px;
-  margin-right: 5px;
-  font-size: 0.9em;
+    background: #ffc107;
+    color: #333;
+    margin-right: 5px;
 }
 
 .btn-editar:hover {
-  background: #ffb300;
+    background: #ffb300;
 }
 
 .btn-eliminar {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 3px;
-  font-size: 0.9em;
+    background: #f44336;
+    color: white;
 }
 
 .btn-eliminar:hover {
-  background: #d32f2f;
+    background: #d32f2f;
+}
+
+/* --- Media Queries (Móviles) --- */
+@media (max-width: 768px) {
+    .gestion-container {
+        padding: 10px;
+    }
+    
+    /* Botones de formulario apilados para móviles */
+    .form-container form button {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        margin-right: 0;
+    }
+
+    /* Botones principales se expanden a todo el ancho */
+    .gestion-container > button {
+        width: 100%;
+        box-sizing: border-box;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    /* Ajuste de botones de tabla: apilados verticalmente */
+    .tabla-productos td:last-child {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: center;
+        padding: 5px; /* Reducir padding de la celda de acciones */
+    }
+    
+    .btn-editar, .btn-eliminar {
+        width: 100%; /* Los botones ocupan todo el ancho disponible en la celda */
+        margin: 0;
+        font-size: 0.8rem;
+        padding: 7px;
+    }
 }
 </style>

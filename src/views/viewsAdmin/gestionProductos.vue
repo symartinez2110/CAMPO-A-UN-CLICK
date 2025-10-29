@@ -354,41 +354,73 @@ onMounted(() => {
 
 
 <style scoped>
-/* Estilos existentes */
-.btn-crear {
-    background: #64b129;
+/* Estilos del contenedor principal */
+.gestion-container {
+    padding: 20px;
+    /* 🛑 SOLUCIÓN CLAVE 1: Asegura que el contenedor principal no desborde horizontalmente */
+    overflow-x: hidden; 
+}
+
+h2 {
+    color: #4a8d20; /* Verde oscuro para el título */
+    border-bottom: 2px solid #cceeb3;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* --- Botones principales de acción --- */
+.btn-crear, .btn-cancelar {
     border: none;
     color: white;
     padding: 10px 15px;
     margin-bottom: 20px;
     cursor: pointer;
     border-radius: 8px;
-    margin-right: 10px; /* Espacio añadido */
+    font-weight: bold;
+}
+.btn-crear {
+    background: #64b129;
+    margin-right: 10px; 
 }
 .btn-crear:hover {
     background: #4a8d20;
 }
-
-/* Nuevo estilo para botón de cancelar */
 .btn-cancelar {
     background: #7f8c8d;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    margin-bottom: 20px;
-    cursor: pointer;
-    border-radius: 8px;
 }
 .btn-cancelar:hover {
     background: #5e6b6c;
 }
 
+/* --- Formulario Modal/Overlay (Responsivo) --- */
+.form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
 .form-container {
     background: #f2ffe6;
-    padding: 20px;
+    padding: 30px;
     border-radius: 10px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    max-width: 600px;
+    width: 90%; /* Responsividad clave */
+    max-height: 90vh;
+    overflow-y: auto; /* Permite scroll si el formulario es muy largo */
+}
+.form-container h3 {
+    color: #64b129;
+    border-bottom: 1px solid #cceeb3;
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 15px;
 }
 .form-container label {
     display: block;
@@ -397,74 +429,166 @@ onMounted(() => {
 }
 .form-container input,
 .form-container textarea,
-.form-container select { /* Añadido select */
+.form-container select {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     margin-top: 5px;
+    margin-bottom: 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
-    box-sizing: border-box; /* Asegura que el padding no desborde el ancho */
+    box-sizing: border-box; 
 }
-
-.btn-guardar {
+.btn-guardar, .btn-actualizar {
+    padding: 10px 15px;
     margin-top: 15px;
-    padding: 10px;
-    background: #64b129;
-    color: white;
     border: none;
+    color: white;
     border-radius: 8px;
     cursor: pointer;
+    margin-right: 10px;
+}
+.btn-guardar {
+    background: #64b129;
 }
 .btn-guardar:hover {
     background: #4a8d20;
 }
-
-/* Nuevo estilo para botón de actualizar */
 .btn-actualizar {
-    margin-top: 15px;
-    padding: 10px;
-    background: #2980b9; /* Azul distinto para actualizar */
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
+    background: #2980b9; 
 }
 .btn-actualizar:hover {
     background: #1f6f9c;
 }
 
+/* --- Tabla de Productos (Responsiva) --- */
+.data-table-section {
+    margin-top: 30px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.data-table-section h3 {
+    color: #333;
+    margin-top: 0;
+}
+
+/* CLAVE: Contenedor de scroll para tablas */
+.tabla-scroll-container {
+    width: 100%;
+    overflow-x: auto; 
+}
+
 .tabla-productos {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    /* 🛠️ AJUSTE 2: Reducido de 800px a 700px para más flexibilidad en tablets */
+    min-width: 700px; 
+    margin-top: 10px;
 }
+
 .tabla-productos th,
 .tabla-productos td {
-    border: 1px solid #ccc;
-    padding: 10px;
+    border: 1px solid #ddd;
+    padding: 10px 8px; 
     text-align: center;
+    font-size: 0.9rem;
+    vertical-align: middle;
 }
 .tabla-productos th {
     background: #cceeb3;
+    font-weight: bold;
+    color: #333;
 }
+.tabla-productos td:nth-child(2) img { /* Estilo para la imagen del producto */
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Botones de acción en la tabla */
 .btn-editar, .btn-eliminar {
-    margin: 0 5px;
-    padding: 5px 10px;
+    margin: 3px;
+    padding: 5px 8px;
     border: none;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    white-space: nowrap; 
 }
 .btn-editar {
-    background: #f1c40f;
+    background: #f1c40f; 
     color: black;
 }
 .btn-eliminar {
-    background: #e74c3c;
+    background: #e74c3c; 
     color: white;
 }
-.imagen-actual {
-    font-style: italic;
-    color: #555;
-    margin-bottom: 10px;
+.btn-editar:hover {
+    background: #e0b40e;
+}
+.btn-eliminar:hover {
+    background: #c0392b;
+}
+
+/* --- Media Queries (Móviles) --- */
+@media (max-width: 768px) {
+    .gestion-container {
+        padding: 10px;
+    }
+    
+    .form-container {
+        padding: 20px;
+        width: 95%; 
+    }
+    
+    /* Botones de formulario apilados para móviles */
+    .form-container form > button {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        margin-right: 0;
+    }
+
+    /* Botón de crear se expande a todo el ancho */
+    .gestion-container > button.btn-crear {
+        width: 100%;
+        box-sizing: border-box;
+        margin-right: 0;
+    }
+
+    /* Tabla */
+    .tabla-productos {
+        /* 🛠️ AJUSTE 3: Reducido de 650px a 580px para dar más margen en móviles */
+        min-width: 580px; 
+    }
+
+    .tabla-productos th,
+    .tabla-productos td {
+        padding: 8px 5px;
+        font-size: 0.8rem;
+    }
+
+    .tabla-productos td:nth-child(2) img {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* Ajuste de botones de tabla: apilados verticalmente */
+    .tabla-productos td:last-child {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        align-items: center;
+    }
+    .btn-editar, .btn-eliminar {
+        width: 80%; /* Hacer que los botones de acción sean más anchos */
+        margin: 0;
+        font-size: 0.75rem;
+    }
 }
 </style>
