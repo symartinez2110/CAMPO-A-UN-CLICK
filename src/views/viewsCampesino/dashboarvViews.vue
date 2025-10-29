@@ -4,9 +4,8 @@ import { ref } from "vue";
 
 // Importamos los CRUDs
 import ProductosCrud from './gestionProductos.vue';
-import CategoriasCrud from './CategoriasCrud.vue';
 import VentasCrud from './VentasCrud.vue';
-import UsuariosCrud from './UsuariosCrud.vue';
+import UsuariosCrud from '../viewsAdministrador/UsuariosCrud.vue';
 
 // Controlar qué vista se muestra en el panel
 const currentView = ref("productos");
@@ -26,7 +25,7 @@ const currentView = ref("productos");
         <ul>
           <li @click="currentView = 'ventas'">Reporte de ventas</li>
           <li @click="currentView = 'productos'">Gestionar Productos</li>
-          <li @click="currentView = 'categorias'">Gestión de categorías</li>
+        <!---  <li @click="currentView = 'categorias'">Gestión de categorías</li>-->
         <!---  <li @click="currentView = 'usuarios'">Gestión de usuarios</li> -->
         </ul>
       </aside>

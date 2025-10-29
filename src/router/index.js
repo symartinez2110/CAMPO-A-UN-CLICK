@@ -4,27 +4,29 @@ import loginView from '../views/viewsUser/loginView.vue';
 import HomeView from "../views/viewsUser/HomeView.vue";
 import ProductosView from "../views/viewsUser/productosView.vue";
 import PerfilUserView from "../views/viewsUser/perfilUserView.vue";
-import DashboarvViews from "../views/viewsAdmin/dashboarvViews.vue";
+import DashboarvViews from "../views/viewsCampesino/dashboarvViews.vue";
 import RegistroView from "../views/viewsUser/registroView.vue";
-import GestionProductos from "../views/viewsAdmin/gestionProductos.vue";
-import CategoriasCrud from "../views/viewsAdmin/CategoriasCrud.vue";
+import GestionProductos from "../views/viewsCampesino/gestionProductos.vue";
+import CategoriasCrud from "../views/viewsAdministrador/CategoriasCrud.vue";
 import CarritoUser from "../components/Carrito.vue";
+// 🟢 Nueva Importación para Gestión de Usuarios
+import DashboarViewsCampesino from "../views/viewsAdministrador/dashboarViewsCampesino.vue";
 
 
 // Bloque para la navegacion 
 
 const router = createRouter({
-    // CAMBIO 2: Aplicar el modo hash
-    history: createWebHistory(import.meta.env.BASE_URL),
-    routes: [
-    {
-        path: '/loginUser',
-        name: 'loginUser',
-        component: loginView
-    },
-    //Ruta para la redireccion 
-    {
-        path: '/',
+  // CAMBIO 2: Aplicar el modo hash
+history: createWebHistory(import.meta.env.BASE_URL),
+routes: [
+{
+path: '/loginUser',
+name: 'loginUser',
+component: loginView
+},
+//Ruta para la redireccion 
+{ 
+path: '/',
         redirect: '/loginUser',
     
     },
@@ -62,13 +64,14 @@ const router = createRouter({
             {
                 path: 'productos',
                 component: GestionProductos
-            },
-            {
-                path: 'categorias',
-                component: CategoriasCrud
             }
         ]
-    }
+    },
+    {
+        path: '/administradorSistema',
+        name: 'dashboarAdminSis',
+        component: DashboarViewsCampesino
+    }
     ]
 })
 
