@@ -24,10 +24,10 @@ const mensajeEstado = ref('') // Para mostrar mensajes de éxito o error
 // ✅ Obtenemos los clientes de API
 const { get, put } = useApi() 
 
-// --- 🚀 Funciones de Lógica ---
+//  Funciones de Lógica 
 
 /**
- * 🔄 Alterna entre el modo de visualización y edición.
+  Alterna entre el modo de visualización y edición.
  */
 const alternarModoEdicion = () => {
   if (modoEdicion.value) {
@@ -46,8 +46,7 @@ const alternarModoEdicion = () => {
 
 
 /**
- * 💾 Envía la solicitud PUT para actualizar los datos del usuario.
- */
+ *  Envía la solicitud PUT para actualizar los datos del usuario */
 const guardarUsuario = async () => {
   mensajeEstado.value = 'Guardando cambios...'
   
@@ -77,8 +76,7 @@ const guardarUsuario = async () => {
 }
 
 /**
- * 📥 Carga los datos del usuario usando GET /usuarios/:id.
- */
+ *  Carga los datos del usuario usando GET /usuarios/:id.*/
 const cargarUsuario = async () => {
   mensajeEstado.value = 'Cargando datos...'
   try {
@@ -86,7 +84,7 @@ const cargarUsuario = async () => {
     const url = `/usuarios/${idUsuario.value}` 
     const response = await get(url)
     
-    // 💡 Corrección: Tu API devuelve el objeto directamente con res.json(usuario)
+    //  Corrección: Tu API devuelve el objeto directamente con res.json(usuario)
     const data = response 
 
     // ✅ Asignamos los campos
@@ -106,7 +104,7 @@ const cargarUsuario = async () => {
   }
 }
 
-// ✅ Llamamos la función cuando se monte el componente
+// Llamamos la función cuando se monte el componente
 onMounted(() => {
   cargarUsuario()
 })
