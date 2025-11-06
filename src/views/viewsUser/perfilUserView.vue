@@ -1,5 +1,115 @@
 <script setup>
-import theHeader from '../../components/theHeader.vue';
+import { ref, onMounted } from 'vue'
+import theHeader from '../../components/theHeader.vue'
+// Asumo que tu useApi exporta get y put
+import useApi from '../../componsables/useApi' 
+
+// --- ⚙️ Configuración y Estado ---
+
+// ⚠️ IMPORTANTE: Este ID debe ser dinámico (obtenido del estado de sesión/login).
+// Lo dejamos fijo en 1 como ejemplo funcional con tu ruta /usuarios/:id.
+const idUsuario = ref(1) 
+
+// ✅ Estados reactivos
+const usuario = ref({
+  Nombre: '',
+  direccion: '',
+  telefono: '',
+  email: ''
+})
+const usuarioOriginal = ref(null) // Respaldo de datos para el botón Cancelar
+const modoEdicion = ref(false) // Controla si se está editando o no
+const mensajeEstado = ref('') // Para mostrar mensajes de éxito o error
+
+// ✅ Obtenemos los clientes de API
+const { get, put } = useApi() 
+
+// --- 🚀 Funciones de Lógica ---
+
+/**
+ * 🔄 Alterna entre el modo de visualización y edición.
+ */
+const alternarModoEdicion = () => {
+  if (modoEdicion.value) {
+    // Si se está saliendo del modo edición (cancelar), restaurar datos
+    if (usuarioOriginal.value) {
+      usuario.value = { ...usuarioOriginal.value }
+    }
+    mensajeEstado.value = 'Edición cancelada.'
+  } else {
+    // Si se está entrando en modo edición, guardar datos originales
+    usuarioOriginal.value = { ...usuario.value }
+    mensajeEstado.value = 'Modo Edición activado. Realice los cambios.'
+  }
+  modoEdicion.value = !modoEdicion.value
+}
+
+
+/**
+ * 💾 Envía la solicitud PUT para actualizar los datos del usuario.
+ */
+const guardarUsuario = async () => {
+  mensajeEstado.value = 'Guardando cambios...'
+  
+  // Datos que enviaremos al backend
+  const datosActualizados = {
+    Nombre: usuario.value.Nombre,
+    direccion: usuario.value.direccion,
+    telefono: usuario.value.telefono,
+    email: usuario.value.email
+  }
+
+  try {
+    const url = `/usuarios/${idUsuario.value}` 
+    
+    // Realizamos la petición PUT a la ruta de tu backend
+    await put(url, datosActualizados)
+    
+    // Si la actualización es exitosa:
+    usuarioOriginal.value = { ...usuario.value } // Actualiza el respaldo
+    modoEdicion.value = false // Sale del modo edición
+    mensajeEstado.value = '✅ ¡Usuario actualizado con éxito!'
+
+  } catch (error) {
+    console.error('Error al actualizar el usuario:', error)
+    mensajeEstado.value = '❌ Error al actualizar. Revisa la consola.'
+  }
+}
+
+/**
+ * 📥 Carga los datos del usuario usando GET /usuarios/:id.
+ */
+const cargarUsuario = async () => {
+  mensajeEstado.value = 'Cargando datos...'
+  try {
+    // Usamos la ruta específica por ID, que devuelve un solo objeto
+    const url = `/usuarios/${idUsuario.value}` 
+    const response = await get(url)
+    
+    // 💡 Corrección: Tu API devuelve el objeto directamente con res.json(usuario)
+    const data = response 
+
+    // ✅ Asignamos los campos
+    usuario.value = {
+      Nombre: data.Nombre || '',
+      direccion: data.direccion || '',
+      telefono: data.telefono || '',
+      email: data.email || ''
+    }
+    
+    usuarioOriginal.value = { ...usuario.value } // Inicializamos el respaldo
+    mensajeEstado.value = 'Datos Personales'
+
+  } catch (error) {
+    console.error('Error al cargar el usuario:', error)
+    mensajeEstado.value = '❌ Error al cargar los datos. Asegúrate que el ID (1) exista.'
+  }
+}
+
+// ✅ Llamamos la función cuando se monte el componente
+onMounted(() => {
+  cargarUsuario()
+})
 </script>
 
 <template>
@@ -7,42 +117,87 @@ import theHeader from '../../components/theHeader.vue';
     <theHeader />
 
     <div class="profile-card">
-
       <div class="card-header">
         <div class="profile-image">
-          <img src="/public/foto_user.png" alt="Profile" />
+          <img src="/public/logo.png" alt="Profile" />
         </div>
         
-        <button class="edit-button">
-          <span class="edit-icon">✏️</span>
-          <span>EDITAR</span>
+        <button class="edit-button" @click="modoEdicion ? guardarUsuario() : alternarModoEdicion()">
+          <span class="edit-icon">
+            {{ modoEdicion ? '💾' : '✏️' }}
+          </span>
+          <span>{{ modoEdicion ? 'GUARDAR' : 'EDITAR' }}</span>
+        </button>
+
+        <button v-if="modoEdicion" class="cancel-button" @click="alternarModoEdicion()">
+          <span class="edit-icon">❌</span>
+          <span>CANCELAR</span>
         </button>
       </div>
 
-      <div class="data-container">
-        <div class="data-field">Dato 1</div>
-        <div class="data-field">Dato 2</div>
-        <div class="data-field">Dato 3</div>
-        <div class="data-field">Dato 4</div>
+      <p class="status-message">{{ mensajeEstado }}</p>
+
+      <form v-if="modoEdicion" @submit.prevent="guardarUsuario" class="data-container">
+        
+        <div class="data-field">
+          <h4>Nombre</h4>
+          <input type="text" v-model="usuario.Nombre" required />
+        </div>
+
+        <div class="data-field">
+          <h4>Dirección</h4>
+          <input type="text" v-model="usuario.direccion" required />
+        </div>
+
+        <div class="data-field">
+          <h4>Teléfono</h4>
+          <input type="tel" v-model="usuario.telefono" required />
+        </div>
+
+        <div class="data-field">
+          <h4>Email</h4>
+          <input type="email" v-model="usuario.email" required />
+        </div>
+      </form>
+
+      <div v-else class="data-container">
+        
+        <div class="data-field">
+          <h4>Nombre</h4>
+          <div class="data-value">{{ usuario.Nombre }}</div>
+        </div>
+
+        <div class="data-field">
+          <h4>Dirección</h4>
+          <div class="data-value">{{ usuario.direccion }}</div>
+        </div>
+
+        <div class="data-field">
+          <h4>Teléfono</h4>
+          <div class="data-value">{{ usuario.telefono }}</div>
+        </div>
+
+        <div class="data-field">
+          <h4>Email</h4>
+          <div class="data-value">{{ usuario.email }}</div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Variables CSS para reutilizar colores fácilmente. */
 :root {
-  --color-primary: #86c679; /* El color verde de la imagen. */
-  --color-background-card: #ffffff; /* Blanco de la tarjeta. */
-  --color-edit-text: #666; /* Color del texto "EDITAR". */
-  --color-border: #ddd; /* Color del borde para la sombra. */
+  --color-primary: #86c679;
+  --color-background-card: #ffffff;
+  --color-edit-text: #666;
+  --color-border: #ddd;
 }
 
 .main-view-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* La imagen de fondo. Reemplaza la URL con la ruta de tu imagen. */
   background-image: url('/public/Fondo_Panel_user.jpg');
   background-size: cover;
   background-position: center;
@@ -54,16 +209,15 @@ import theHeader from '../../components/theHeader.vue';
 
 .profile-card {
   height: 100%;
- background-color: white;
+  background-color: white;
   border-radius: 15px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 80px;
-  width: 70%; /* Esto permite que quepan 2 por fila */
+  width: 70%;
   max-width: 900px;
   min-width: 300px;
   text-align: center;
   margin-top: 100px;
-  
 }
 
 .card-header {
@@ -81,12 +235,12 @@ import theHeader from '../../components/theHeader.vue';
   border-radius: 50%;
   border: 4px solid var(--color-background-card);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  object-fit: cover; /* Asegura que la imagen no se distorsione. */
+  object-fit: cover;
 }
 
 .edit-button {
   position: absolute;
-  top: -10px; /* Ajusta la posición vertical. */
+  top: -10px;
   right: 0;
   background: none;
   border: none;
@@ -97,6 +251,19 @@ import theHeader from '../../components/theHeader.vue';
   font-size: 14px;
 }
 
+.cancel-button {
+  position: absolute;
+  top: 25px; 
+  right: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #f44336; /* Rojo para cancelar */
+  font-size: 14px;
+}
+
 .edit-icon {
   margin-right: 5px;
   font-size: 16px;
@@ -104,22 +271,11 @@ import theHeader from '../../components/theHeader.vue';
 
 .data-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 2 columnas iguales */
-  grid-template-rows: repeat(2, auto);  
-  gap: 15px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, auto);
+  gap: 10px;
   margin-top: 20px;
-}
-
-.data-box {
-  background-color: #B5E491;
-  color: white;
-  width: 150px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-weight: bold;
+  
 }
 
 .data-field {
@@ -128,14 +284,37 @@ import theHeader from '../../components/theHeader.vue';
   padding: 15px 20px;
   margin: 20px;
   border-radius: 8px;
-  flex: 1 1 calc(60% - 10px); /* Ocupa el 50% del ancho con un pequeño espacio. */
+  flex: 1 1 calc(60% - 10px);
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
 }
+
+.data-field input[type="text"],
+.data-field input[type="tel"],
+.data-field input[type="email"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-sizing: border-box; 
+  text-align: center;
+  color: #333; /* Color oscuro para el texto */
+}
+
+.status-message {
+  margin-top: 15px;
+  font-weight: bold;
+  color: var(--color-edit-text);
+  font-size: 20px;
+}
+
 
 @media (max-width: 600px) {
   .data-field {
-    flex-basis: 100%; /* En pantallas más pequeñas, ocupa todo el ancho. */
+    flex-basis: 100%;
   }
 }
 </style>
