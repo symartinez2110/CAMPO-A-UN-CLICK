@@ -51,7 +51,7 @@ const handleLogin = async () => {
     
     // Redirigir según rol
     if (res.rol === 'admin') {
-      router.push({ name: 'dashboarAdmin' })
+      router.push({ name: 'dashboarAdminSis' })
     } else if (res.rol === 'campesino') {
       router.push({ name: 'homeUser' })
     } else {
