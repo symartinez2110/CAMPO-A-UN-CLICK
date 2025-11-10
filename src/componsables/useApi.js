@@ -5,7 +5,7 @@ import { ref } from "vue";
 
 // Crear una constante que me almacene la ruta para consumir la api 
 // 🚨 Asegúrate de que esta URL es correcta para tu servidor 🚨
-const baseURL = 'http://192.168.1.41:3000' 
+const baseURL = 'http://10.2.35.76:3000' 
 
 const api = axios.create({baseURL})
 
