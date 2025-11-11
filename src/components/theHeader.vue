@@ -24,7 +24,7 @@
             </router-link>
             
             <router-link :to="{name: 'productosUser'}">
-              <li class="button">Productos</li>
+             <!--- <li class="button">Productos</li>-->
             </router-link>
             
             <li class="button" @click="logout">Cerrar sesión</li>
